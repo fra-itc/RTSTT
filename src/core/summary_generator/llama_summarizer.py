@@ -22,7 +22,7 @@ from typing import Optional, Dict, Any, List
 import torch
 from transformers import (
     AutoTokenizer,
-    AutoModelForCausalLM,
+    AutoModelForSeq2SeqLM,
     pipeline,
     BitsAndBytesConfig
 )
@@ -46,7 +46,7 @@ class LlamaSummarizer:
         pipeline: Pipeline di summarization
     """
 
-    MODEL_NAME = "meta-llama/Llama-3.2-8B-Instruct"
+    MODEL_NAME = "google/flan-t5-base"  # Unrestricted summarization model
     CACHE_DIR = Path.home() / ".cache" / "huggingface" / "hub"
 
     def __init__(
@@ -123,12 +123,16 @@ class LlamaSummarizer:
                     llm_int8_has_fp16_weight=False,
                 )
 
+            # Get HuggingFace token from environment
+            hf_token = os.getenv("HF_TOKEN")
+
             # Carica tokenizer
             logger.info("Loading tokenizer...")
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_name,
                 cache_dir=self.cache_dir,
-                trust_remote_code=True
+                trust_remote_code=True,
+                token=hf_token
             )
 
             # Imposta pad token se non presente
@@ -143,12 +147,13 @@ class LlamaSummarizer:
                 "device_map": self.device_map,
                 "trust_remote_code": True,
                 "torch_dtype": torch.float16 if self.use_gpu else torch.float32,
+                "token": hf_token
             }
 
             if quantization_config:
                 model_kwargs["quantization_config"] = quantization_config
 
-            self.model = AutoModelForCausalLM.from_pretrained(
+            self.model = AutoModelForSeq2SeqLM.from_pretrained(
                 self.model_name,
                 **model_kwargs
             )
@@ -159,7 +164,7 @@ class LlamaSummarizer:
             # Crea pipeline di summarization
             logger.info("Creating summarization pipeline...")
             self.summarizer_pipeline = pipeline(
-                "text-generation",
+                "summarization",
                 model=self.model,
                 tokenizer=self.tokenizer,
                 device_map=self.device_map,
@@ -266,21 +271,18 @@ Summary:<|eot_id|>
             # Crea prompt
             prompt = self._create_summary_prompt(text, max_length)
 
-            # Genera summary
+            # Genera summary (using T5 summarization parameters)
             outputs = self.summarizer_pipeline(
-                prompt,
-                max_new_tokens=max_length * 2,  # Token count buffer
-                min_new_tokens=min_length,
+                text,  # Use original text, not prompt for summarization pipeline
+                max_length=max_length,
+                min_length=min_length,
+                do_sample=do_sample,
                 temperature=temperature,
                 top_p=top_p,
-                do_sample=do_sample,
-                pad_token_id=self.tokenizer.eos_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-                return_full_text=False,
             )
 
             # Estrai summary
-            summary = outputs[0]["generated_text"].strip()
+            summary = outputs[0]["summary_text"].strip()
 
             # Clean up summary (rimuovi eventuali tag residui)
             summary = summary.replace("<|eot_id|>", "").strip()

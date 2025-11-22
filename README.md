@@ -68,12 +68,15 @@ This Proof of Concept (POC) demonstrates a production-grade real-time STT system
 ### Prerequisites
 
 - **OS**: Windows 11 (64-bit)
-- **GPU**: NVIDIA RTX 5080 (or similar with 16GB+ VRAM)
-- **CUDA**: 12.1+
+- **GPU**: NVIDIA RTX 5080 Blackwell (16GB VRAM) - **FULLY VALIDATED ✅**
+- **CUDA**: 12.8+ (required for RTX 5080 sm_120 support)
+- **PyTorch**: 2.7.0+cu128 (validated on RTX 5080)
 - **Python**: 3.10+
 - **Node.js**: 20.x (for Electron)
 - **Docker**: 24.0+ with NVIDIA Container Runtime
 - **Redis**: 7.2+
+
+> **RTX 5080 Validation**: All ML services (STT, NLP, Summary) passed 7/7 GPU validation tests with PyTorch 2.7.0+cu128 and CUDA 12.8. See [RTX_5080_VALIDATION_REPORT.md](RTX_5080_VALIDATION_REPORT.md) for full details.
 
 ### Installation
 

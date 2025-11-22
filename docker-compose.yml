@@ -72,7 +72,6 @@ services:
       - DEVICE=cuda
       - COMPUTE_TYPE=float16
     volumes:
-      - ./src:/app/src:ro
       - ./models:/app/models
       - ./logs:/app/logs
     networks:
@@ -108,8 +107,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - DEVICE=cuda
+      - HF_TOKEN=${HF_TOKEN}
     volumes:
-      - ./src:/app/src:ro
       - ./models:/app/models
       - ./logs:/app/logs
     networks:
@@ -138,10 +137,10 @@ services:
       - ENVIRONMENT=production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - MODEL_NAME=llama-3.2-8b
+      - MODEL_NAME=google/flan-t5-base
       - DEVICE=cuda
+      - HF_TOKEN=${HF_TOKEN}
     volumes:
-      - ./src:/app/src:ro
       - ./models:/app/models
       - ./logs:/app/logs
     networks:
@@ -214,7 +213,6 @@ services:
       - GF_SERVER_ROOT_URL=http://localhost:3001
       - GF_INSTALL_PLUGINS=redis-datasource
     volumes:
-      - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./infrastructure/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - grafana_data:/var/lib/grafana
