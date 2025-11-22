@@ -123,12 +123,16 @@ class LlamaSummarizer:
                     llm_int8_has_fp16_weight=False,
                 )
 
+            # Get HuggingFace token from environment
+            hf_token = os.getenv("HF_TOKEN")
+
             # Carica tokenizer
             logger.info("Loading tokenizer...")
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_name,
                 cache_dir=self.cache_dir,
-                trust_remote_code=True
+                trust_remote_code=True,
+                token=hf_token
             )
 
             # Imposta pad token se non presente
@@ -143,6 +147,7 @@ class LlamaSummarizer:
                 "device_map": self.device_map,
                 "trust_remote_code": True,
                 "torch_dtype": torch.float16 if self.use_gpu else torch.float32,
+                "token": hf_token
             }
 
             if quantization_config:

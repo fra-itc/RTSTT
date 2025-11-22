@@ -63,9 +63,9 @@ bert-score==0.3.13  # Semantic similarity
 safetensors==0.4.1
 
 # gRPC and Protocol Buffers for service communication
-grpcio==1.60.0
-grpcio-tools==1.60.0
-protobuf==4.25.1
+grpcio==1.59.0
+grpcio-tools==1.59.0
+protobuf==4.25.0
 
 # Redis for message queuing and caching
 redis==5.0.1
