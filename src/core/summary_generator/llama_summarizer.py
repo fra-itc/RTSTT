@@ -46,7 +46,7 @@ class LlamaSummarizer:
         pipeline: Pipeline di summarization
     """
 
-    MODEL_NAME = "meta-llama/Llama-3.2-8B-Instruct"
+    MODEL_NAME = "google/flan-t5-base"  # Unrestricted summarization model
     CACHE_DIR = Path.home() / ".cache" / "huggingface" / "hub"
 
     def __init__(

@@ -106,7 +106,7 @@ services:
       - ENVIRONMENT=production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - DEVICE=cuda
+      - DEVICE=cpu
       - HF_TOKEN=${HF_TOKEN}
     volumes:
       - ./models:/app/models
