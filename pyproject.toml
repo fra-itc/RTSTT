@@ -23,6 +23,7 @@ redis = {extras = ["hiredis"], version = "^5.0.1"}
 # gRPC
 grpcio = "^1.59.0"
 grpcio-tools = "^1.59.0"
+grpcio-health-checking = "^1.59.0"
 protobuf = "^4.25.0"
 
 # Audio processing (base)

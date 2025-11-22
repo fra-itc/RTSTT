@@ -16,6 +16,7 @@ import os
 from typing import Optional
 
 from .nlp_service import NLPService, NLPServiceConfig
+from src.shared.grpc_health_server import GRPCHealthServer
 
 # Configure logging
 logging.basicConfig(
@@ -47,6 +48,7 @@ class NLPServer:
             hf_token: HuggingFace token for diarization models
         """
         self.service = None
+        self.grpc_health_server = None
         self.running = False
 
         logger.info("="*70)
@@ -83,6 +85,13 @@ class NLPServer:
         """Start the server and keep it running."""
         self.running = True
 
+        # Start gRPC health server
+        try:
+            self.grpc_health_server = GRPCHealthServer(port=50052, service_name="nlp.NLPService")
+            self.grpc_health_server.start()
+        except Exception as e:
+            logger.error(f"Failed to start gRPC health server: {e}")
+
         # Register signal handlers for graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
@@ -113,6 +122,13 @@ class NLPServer:
         """Stop the server gracefully."""
         logger.info("Shutting down NLP Service...")
         self.running = False
+
+        # Stop gRPC health server
+        if self.grpc_health_server:
+            try:
+                self.grpc_health_server.stop()
+            except Exception as e:
+                logger.error(f"Error stopping gRPC health server: {e}")
 
         if self.service:
             try:
