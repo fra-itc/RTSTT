@@ -130,7 +130,6 @@ export const AudioTester: React.FC = () => {
 
   // Log state
   const [testLogs, setTestLogs] = useState<TestLog[]>([]);
-  const [showLogs, setShowLogs] = useState(false);
 
   // Web Audio API refs
   const audioContextRef = useRef<AudioContext | null>(null);
