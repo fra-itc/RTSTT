@@ -1,7 +1,7 @@
 import React from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppLayout, GridLayout } from './components/Layout/AppLayout';
-import { AudioVisualizer } from './components/AudioVisualizer/AudioVisualizer';
+import { AudioTester } from './components/AudioTester';
 import TranscriptionPanel from './components/TranscriptionPanel';
 import InsightsPanel from './components/InsightsPanel';
 import { SummaryPanel } from './components/SummaryPanel';
@@ -12,7 +12,7 @@ const App: React.FC = () => {
     <ThemeProvider>
       <AppLayout>
         <GridLayout
-          topLeft={<AudioVisualizer />}
+          topLeft={<AudioTester />}
           topRight={<TranscriptionPanel />}
           bottomLeft={<InsightsPanel />}
           bottomRight={<SummaryPanel />}
