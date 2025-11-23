@@ -88,7 +88,7 @@ class AudioBridge:
         """
         self.stats.start_time = time.time()
         self._running = True
-        self._loop = asyncio.get_event_loop()
+        self._loop = asyncio.get_running_loop()
 
         logger.info("Starting Audio Bridge")
         logger.info(f"  WebSocket: {self.config.websocket_url}")
