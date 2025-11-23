@@ -1,0 +1,178 @@
+syntax = "proto3";
+
+package nlp;
+
+// NLP Service for extracting insights from transcribed text
+service NLPService {
+  // Extract insights (keywords, entities, sentiment) from transcription text
+  rpc ExtractInsights (TranscriptionRequest) returns (InsightsResponse);
+
+  // Health check for service availability
+  rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Request message for NLP insights extraction
+message TranscriptionRequest {
+  // Transcribed text to analyze
+  string text = 1;
+
+  // Optional: Session ID for tracking
+  string session_id = 2;
+
+  // Optional: Request ID for tracking
+  string request_id = 3;
+
+  // Optional: Additional metadata
+  map<string, string> metadata = 4;
+
+  // Optional: Number of top keywords to extract (default: 10)
+  int32 top_keywords = 5;
+
+  // Optional: Enable entity extraction (default: true)
+  bool enable_entities = 6;
+
+  // Optional: Enable sentiment analysis (default: true)
+  bool enable_sentiment = 7;
+}
+
+// Response message with NLP insights
+message InsightsResponse {
+  // Session ID (echo from request)
+  string session_id = 1;
+
+  // Request ID (echo from request)
+  string request_id = 2;
+
+  // Timestamp of analysis
+  string timestamp = 3;
+
+  // Extracted keywords with scores
+  repeated Keyword keywords = 4;
+
+  // Extracted entities
+  repeated Entity entities = 5;
+
+  // Sentiment analysis result
+  Sentiment sentiment = 6;
+
+  // Additional insights and statistics
+  TextStats text_stats = 7;
+
+  // Processing time in milliseconds
+  float processing_time_ms = 8;
+
+  // Status information
+  Status status = 9;
+}
+
+// Keyword with relevance score
+message Keyword {
+  // Keyword or keyphrase text
+  string keyword = 1;
+
+  // Relevance score (0.0 to 1.0)
+  float score = 2;
+
+  // N-gram size (1 = unigram, 2 = bigram, etc.)
+  int32 ngram_size = 3;
+}
+
+// Named entity
+message Entity {
+  // Entity text
+  string text = 1;
+
+  // Entity type (e.g., "PERSON", "ORG", "LOCATION", "DATE")
+  string entity_type = 2;
+
+  // Confidence score (0.0 to 1.0)
+  float confidence = 3;
+
+  // Start position in text
+  int32 start_pos = 4;
+
+  // End position in text
+  int32 end_pos = 5;
+}
+
+// Sentiment analysis result
+message Sentiment {
+  // Sentiment label (e.g., "positive", "negative", "neutral")
+  string label = 1;
+
+  // Confidence score (0.0 to 1.0)
+  float confidence = 2;
+
+  // Detailed scores per label
+  map<string, float> scores = 3;
+}
+
+// Text statistics and metadata
+message TextStats {
+  // Character count
+  int32 char_count = 1;
+
+  // Word count
+  int32 word_count = 2;
+
+  // Sentence count
+  int32 sentence_count = 3;
+
+  // Average word length
+  float avg_word_length = 4;
+
+  // Lexical diversity (unique words / total words)
+  float lexical_diversity = 5;
+}
+
+// Status information
+message Status {
+  // Status code (0 = success, non-zero = error)
+  int32 code = 1;
+
+  // Human-readable message
+  string message = 2;
+
+  // Error details if applicable
+  string error_details = 3;
+}
+
+// Health check request
+message HealthCheckRequest {
+  // Service name to check
+  string service = 1;
+}
+
+// Health check response
+message HealthCheckResponse {
+  // Service status
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+
+  ServingStatus status = 1;
+
+  // Additional health information
+  string message = 2;
+
+  // Model information
+  ModelInfo model_info = 3;
+}
+
+// Model information for health checks
+message ModelInfo {
+  // Model name (e.g., "all-MiniLM-L6-v2")
+  string name = 1;
+
+  // Device (e.g., "cuda", "cpu")
+  string device = 2;
+
+  // Is model loaded
+  bool is_loaded = 3;
+
+  // Component statuses
+  map<string, string> components = 4;
+}

@@ -1,0 +1,220 @@
+syntax = "proto3";
+
+package summary;
+
+// Summary Service for generating text summaries
+service SummaryService {
+  // Generate a summary from text
+  rpc GenerateSummary (TextRequest) returns (SummaryResponse);
+
+  // Generate summaries for multiple texts in batch
+  rpc GenerateSummaryBatch (BatchTextRequest) returns (BatchSummaryResponse);
+
+  // Health check for service availability
+  rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Request message for text summarization
+message TextRequest {
+  // Text to summarize
+  string text = 1;
+
+  // Optional: Session ID for tracking
+  string session_id = 2;
+
+  // Optional: Request ID for tracking
+  string request_id = 3;
+
+  // Optional: Additional metadata
+  map<string, string> metadata = 4;
+
+  // Optional: Maximum summary length in words (default: 150)
+  int32 max_length = 5;
+
+  // Optional: Minimum summary length in words (default: 50)
+  int32 min_length = 6;
+
+  // Optional: Temperature for generation (0.0-1.0, default: 0.7)
+  float temperature = 7;
+
+  // Optional: Top-p for nucleus sampling (0.0-1.0, default: 0.9)
+  float top_p = 8;
+
+  // Optional: Use cached result if available (default: true)
+  bool use_cache = 9;
+}
+
+// Response message with generated summary
+message SummaryResponse {
+  // Session ID (echo from request)
+  string session_id = 1;
+
+  // Request ID (echo from request)
+  string request_id = 2;
+
+  // Timestamp of summary generation
+  string timestamp = 3;
+
+  // Generated summary text
+  string summary = 4;
+
+  // Original text length in characters
+  int32 text_length = 5;
+
+  // Summary length in characters
+  int32 summary_length = 6;
+
+  // Key points extracted (optional)
+  repeated string key_points = 7;
+
+  // Summary confidence score (0.0 to 1.0)
+  float confidence = 8;
+
+  // Compression ratio (summary_length / text_length)
+  float compression_ratio = 9;
+
+  // Whether result was retrieved from cache
+  bool cached = 10;
+
+  // Processing time in milliseconds
+  float processing_time_ms = 11;
+
+  // Parameters used for generation
+  GenerationParams params = 12;
+
+  // Status information
+  Status status = 13;
+}
+
+// Generation parameters
+message GenerationParams {
+  // Maximum length used
+  int32 max_length = 1;
+
+  // Minimum length used
+  int32 min_length = 2;
+
+  // Temperature used
+  float temperature = 3;
+
+  // Top-p used
+  float top_p = 4;
+}
+
+// Batch request for multiple texts
+message BatchTextRequest {
+  // List of texts to summarize
+  repeated string texts = 1;
+
+  // Optional: Session ID for tracking
+  string session_id = 2;
+
+  // Optional: Request ID for tracking
+  string request_id = 3;
+
+  // Optional: Maximum summary length for all texts
+  int32 max_length = 4;
+
+  // Optional: Additional metadata
+  map<string, string> metadata = 5;
+}
+
+// Batch response with multiple summaries
+message BatchSummaryResponse {
+  // Session ID (echo from request)
+  string session_id = 1;
+
+  // Request ID (echo from request)
+  string request_id = 2;
+
+  // Timestamp of batch processing
+  string timestamp = 3;
+
+  // Generated summaries (same order as input)
+  repeated SummaryResponse summaries = 4;
+
+  // Total processing time in milliseconds
+  float total_processing_time_ms = 5;
+
+  // Number of successful summaries
+  int32 successful_count = 6;
+
+  // Number of failed summaries
+  int32 failed_count = 7;
+
+  // Status information
+  Status status = 8;
+}
+
+// Status information
+message Status {
+  // Status code (0 = success, non-zero = error)
+  int32 code = 1;
+
+  // Human-readable message
+  string message = 2;
+
+  // Error details if applicable
+  string error_details = 3;
+}
+
+// Health check request
+message HealthCheckRequest {
+  // Service name to check
+  string service = 1;
+}
+
+// Health check response
+message HealthCheckResponse {
+  // Service status
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+
+  ServingStatus status = 1;
+
+  // Additional health information
+  string message = 2;
+
+  // Model information
+  ModelInfo model_info = 3;
+}
+
+// Model information for health checks
+message ModelInfo {
+  // Model name (e.g., "google/flan-t5-base")
+  string name = 1;
+
+  // Device (e.g., "cuda", "cpu")
+  string device = 2;
+
+  // Model size in GB
+  float model_size_gb = 3;
+
+  // Is model loaded
+  bool is_loaded = 4;
+
+  // Cache statistics
+  CacheStats cache_stats = 5;
+}
+
+// Cache statistics
+message CacheStats {
+  // Total cached items
+  int32 total_cached = 1;
+
+  // Cache hits
+  int32 cache_hits = 2;
+
+  // Cache misses
+  int32 cache_misses = 3;
+
+  // Cache hit rate (0.0 to 1.0)
+  float hit_rate = 4;
+
+  // Cache enabled
+  bool cache_enabled = 5;
+}

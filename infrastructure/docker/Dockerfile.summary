@@ -38,6 +38,16 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
         tokenizers==0.21.0 \
         safetensors==0.4.3
 
+# Copy proto files and compile them
+COPY protos/ /app/protos/
+RUN mkdir -p /app/src/core/summary_generator && \
+    python -m grpc_tools.protoc \
+    -I/app/protos \
+    --python_out=/app/src/core/summary_generator \
+    --grpc_python_out=/app/src/core/summary_generator \
+    /app/protos/summary_service.proto && \
+    sed -i 's/^import summary_service_pb2/from . import summary_service_pb2/' /app/src/core/summary_generator/summary_service_pb2_grpc.py
+
 # Stage 2: Runtime - Production image with CUDA 12.8 support (RTX 5080 Blackwell sm_120)
 FROM nvidia/cuda:12.8.0-runtime-ubuntu22.04
 
@@ -67,6 +77,9 @@ COPY --from=builder /opt/venv/lib/python3.11/site-packages/ /usr/local/lib/pytho
 COPY src/ /app/src/
 COPY requirements/ /app/requirements/
 
+# Copy compiled proto files from builder
+COPY --from=builder /app/src/core/summary_generator/*_pb2*.py /app/src/core/summary_generator/
+
 # Create directories for models and logs
 RUN mkdir -p /app/models /app/logs && \
     chmod 755 /app/models /app/logs
@@ -91,5 +104,5 @@ RUN curl -L https://github.com/grpc-ecosystem/grpc-health-probe/releases/downloa
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD grpc_health_probe -addr=:50053 || exit 1
 
-# Run the Summary Service in server mode (not test mode)
-CMD ["python", "-m", "src.core.summary_generator.server"]
+# Run the Summary gRPC Server
+CMD ["python", "-m", "src.core.summary_generator.grpc_server.server"]
