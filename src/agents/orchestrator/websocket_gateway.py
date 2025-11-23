@@ -404,7 +404,7 @@ class WebSocketManager:
 
     async def _transcribe_audio(self, client_id: str, audio_data: bytes, sample_rate: int) -> None:
         """
-        Send audio to STT service for transcription.
+        Send audio to STT service for transcription, then process through NLP and Summary.
 
         Args:
             client_id: Client identifier
@@ -412,13 +412,15 @@ class WebSocketManager:
             sample_rate: Audio sample rate
         """
         try:
-            start_time = datetime.utcnow()
+            pipeline_start = datetime.utcnow()
+            logger.info(f"[{client_id}] Starting full pipeline: STT → NLP → Summary")
             logger.info(f"[{client_id}] Sending {len(audio_data)} bytes to STT service")
 
             # Get gRPC connection pool
             pool_manager = get_pool_manager()
 
-            # Call STT service
+            # Step 1: STT - Transcribe audio
+            stt_start = datetime.utcnow()
             async with pool_manager.get_connection(ServiceType.STT) as conn:
                 channel = conn.get_channel()
                 stub = stt_service_pb2_grpc.STTServiceStub(channel)
@@ -433,36 +435,173 @@ class WebSocketManager:
                 )
 
                 # Call STT
-                response = await stub.Transcribe(request)
+                stt_response = await stub.Transcribe(request)
+                stt_latency = (datetime.utcnow() - stt_start).total_seconds() * 1000
 
-                # Calculate latency
-                latency_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
+                transcription_text = stt_response.text
+                logger.info(f"[{client_id}] STT completed in {stt_latency:.0f}ms: '{transcription_text[:100]}...'")
 
-                # Send transcription to client
+            # Skip NLP/Summary for very short transcriptions
+            if len(transcription_text.strip()) < 10:
+                logger.info(f"[{client_id}] Transcription too short, skipping NLP/Summary")
                 await self.send_personal_message(
                     message={
                         "type": MessageType.TRANSCRIPTION,
-                        "text": response.text,
-                        "language": response.language,
-                        "duration": response.duration,
-                        "latency_ms": latency_ms,
-                        "confidence": response.segments[0].confidence if response.segments else 0.0,
+                        "text": transcription_text,
+                        "language": stt_response.language,
+                        "duration": stt_response.duration,
+                        "latency_ms": stt_latency,
+                        "confidence": stt_response.segments[0].confidence if stt_response.segments else 0.0,
                         "timestamp": datetime.utcnow().isoformat()
                     },
                     client_id=client_id
                 )
+                return
 
-                logger.info(f"[{client_id}] Transcription completed in {latency_ms:.2f}ms: '{response.text}'")
+            # Step 2: NLP - Analyze sentiment and extract keywords
+            nlp_result = None
+            try:
+                nlp_start = datetime.utcnow()
+                # For POC, use simple keyword extraction instead of full NLP service
+                # TODO: Integrate with full NLP service via Redis streams for production
+                nlp_result = await self._extract_keywords(transcription_text)
+                nlp_latency = (datetime.utcnow() - nlp_start).total_seconds() * 1000
+                logger.info(f"[{client_id}] NLP completed in {nlp_latency:.0f}ms")
+            except Exception as e:
+                logger.warning(f"[{client_id}] NLP processing failed: {e}, continuing without NLP")
+                nlp_latency = 0
+
+            # Step 3: Summary - Generate summary for longer texts
+            summary_result = None
+            if len(transcription_text) > 100:  # Only summarize longer texts
+                try:
+                    summary_start = datetime.utcnow()
+                    # For POC, use simple summarization
+                    # TODO: Integrate with full Summary service via Redis streams for production
+                    summary_result = await self._generate_summary(transcription_text)
+                    summary_latency = (datetime.utcnow() - summary_start).total_seconds() * 1000
+                    logger.info(f"[{client_id}] Summary completed in {summary_latency:.0f}ms")
+                except Exception as e:
+                    logger.warning(f"[{client_id}] Summary generation failed: {e}, continuing without summary")
+                    summary_latency = 0
+            else:
+                summary_latency = 0
+
+            # Calculate total pipeline latency
+            total_latency = (datetime.utcnow() - pipeline_start).total_seconds() * 1000
+
+            # Send enriched response to client
+            response_message = {
+                "type": MessageType.TRANSCRIPTION,
+                "transcription": {
+                    "text": transcription_text,
+                    "language": stt_response.language,
+                    "duration": stt_response.duration,
+                    "confidence": stt_response.segments[0].confidence if stt_response.segments else 0.0,
+                },
+                "latency": {
+                    "stt_ms": stt_latency,
+                    "nlp_ms": nlp_latency,
+                    "summary_ms": summary_latency,
+                    "total_ms": total_latency
+                },
+                "timestamp": datetime.utcnow().isoformat()
+            }
+
+            # Add NLP results if available
+            if nlp_result:
+                response_message["nlp"] = nlp_result
+
+            # Add summary if available
+            if summary_result:
+                response_message["summary"] = summary_result
+
+            await self.send_personal_message(
+                message=response_message,
+                client_id=client_id
+            )
+
+            logger.info(
+                f"[{client_id}] Full pipeline completed in {total_latency:.0f}ms "
+                f"(STT: {stt_latency:.0f}ms, NLP: {nlp_latency:.0f}ms, Summary: {summary_latency:.0f}ms)"
+            )
 
         except Exception as e:
-            logger.error(f"Error transcribing audio for {client_id}: {e}")
+            logger.error(f"Error in transcription pipeline for {client_id}: {e}", exc_info=True)
             await self.send_personal_message(
                 message={
                     "type": MessageType.ERROR,
-                    "error": {"message": "Transcription failed", "code": "STT_ERROR"}
+                    "error": {"message": f"Pipeline failed: {str(e)}", "code": "PIPELINE_ERROR"}
                 },
                 client_id=client_id
             )
+
+    async def _extract_keywords(self, text: str) -> Dict[str, Any]:
+        """
+        Extract keywords from text (simplified version for POC).
+
+        Args:
+            text: Input text
+
+        Returns:
+            Dictionary with keyword analysis
+        """
+        # Simple keyword extraction based on word frequency
+        # TODO: Replace with full NLP service integration
+        import re
+        from collections import Counter
+
+        # Remove common words
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+                     'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+                     'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+                     'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these',
+                     'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they'}
+
+        # Extract words
+        words = re.findall(r'\b[a-z]+\b', text.lower())
+        filtered_words = [w for w in words if w not in stop_words and len(w) > 3]
+
+        # Get top keywords
+        word_counts = Counter(filtered_words)
+        top_keywords = [{"word": word, "count": count}
+                       for word, count in word_counts.most_common(5)]
+
+        return {
+            "keywords": top_keywords,
+            "word_count": len(words),
+            "unique_words": len(set(filtered_words))
+        }
+
+    async def _generate_summary(self, text: str, max_sentences: int = 2) -> Dict[str, Any]:
+        """
+        Generate summary of text (simplified version for POC).
+
+        Args:
+            text: Input text
+            max_sentences: Maximum sentences in summary
+
+        Returns:
+            Dictionary with summary
+        """
+        # Simple extractive summarization - take first sentences
+        # TODO: Replace with full Summary service integration
+        import re
+
+        sentences = re.split(r'[.!?]+', text)
+        sentences = [s.strip() for s in sentences if s.strip()]
+
+        summary_sentences = sentences[:max_sentences]
+        summary_text = '. '.join(summary_sentences)
+        if summary_text and not summary_text.endswith('.'):
+            summary_text += '.'
+
+        return {
+            "text": summary_text,
+            "original_length": len(text),
+            "summary_length": len(summary_text),
+            "compression_ratio": len(summary_text) / len(text) if text else 0
+        }
 
     async def cleanup(self) -> None:
         """Clean up all connections and resources."""
