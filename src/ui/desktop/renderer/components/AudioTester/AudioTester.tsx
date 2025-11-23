@@ -33,7 +33,11 @@ import {
   Refresh as RefreshIcon,
   ExpandMore as ExpandMoreIcon,
   Settings as SettingsIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Sync as SyncIcon,
 } from '@mui/icons-material';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 interface AudioDevice {
   deviceId: string;
@@ -128,6 +132,43 @@ export const AudioTester: React.FC = () => {
   const [testLogs, setTestLogs] = useState<TestLog[]>([]);
   const [showLogs, setShowLogs] = useState(false);
 
+  // Web Audio API refs
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioDataArrayRef = useRef<Uint8Array | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const audioProcessorRef = useRef<ScriptProcessorNode | null>(null);
+
+  // WebSocket connection for backend communication
+  const {
+    isConnected,
+    connect: wsConnect,
+    disconnect: wsDisconnect,
+    send: wsSend,
+    connectionStatus,
+    error: wsError,
+  } = useWebSocket({
+    autoConnect: false,
+    onMessage: (message) => {
+      // Handle transcription results from backend
+      if (message.type === 'transcription_segment' && message.data) {
+        const startTime = performance.now();
+        const latency = message.data.latency || Math.floor(performance.now() - startTime);
+
+        setTranscriptions(prev => [
+          ...prev,
+          {
+            text: message.data.text,
+            confidence: message.data.confidence || 0.85,
+            timestamp: new Date().toISOString(),
+            latency: latency,
+          },
+        ]);
+      }
+    },
+  });
+
   // Load audio devices
   const loadAudioDevices = async () => {
     setIsLoadingDevices(true);
@@ -177,12 +218,157 @@ export const AudioTester: React.FC = () => {
     return () => clearInterval(interval);
   }, [isRecording, recordingStartTime]);
 
-  // Simulate audio level changes (replace with real audio capture)
-  useEffect(() => {
-    if (!isRecording) return;
+  // Initialize Web Audio API and capture real audio
+  const initializeAudioCapture = async () => {
+    try {
+      // Request microphone access
+      const constraints: MediaStreamConstraints = {
+        audio: {
+          deviceId: selectedDevice ? { exact: selectedDevice } : undefined,
+          sampleRate: sampleRate,
+          channelCount: channels,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: false,
+        },
+      };
 
-    const interval = setInterval(() => {
-      const newLevel = Math.random() * 100;
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      mediaStreamRef.current = stream;
+
+      // Create audio context
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+        sampleRate: sampleRate,
+      });
+      audioContextRef.current = audioContext;
+
+      // Create analyser node for visualization and level detection
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.8;
+      analyserRef.current = analyser;
+
+      // Create data array for waveform
+      const bufferLength = analyser.frequencyBinCount;
+      audioDataArrayRef.current = new Uint8Array(bufferLength);
+
+      // Create gain node for volume and preamp control
+      const gainNode = audioContext.createGain();
+      gainNodeRef.current = gainNode;
+
+      // Apply volume and preamp gain
+      const volumeGain = isMuted ? 0 : volume / 100;
+      const preampGainLinear = Math.pow(10, preampGain / 20); // Convert dB to linear
+      gainNode.gain.value = volumeGain * preampGainLinear;
+
+      // Create source from microphone stream
+      const source = audioContext.createMediaStreamSource(stream);
+
+      // Connect: source -> gain -> analyser
+      source.connect(gainNode);
+      gainNode.connect(analyser);
+
+      // Create script processor for audio data capture (for sending to backend)
+      const bufferSize = 4096;
+      const processor = audioContext.createScriptProcessor(bufferSize, channels, channels);
+      audioProcessorRef.current = processor;
+
+      processor.onaudioprocess = (event) => {
+        if (!isRecording || !isConnected) return;
+
+        // Get audio data
+        const inputData = event.inputBuffer.getChannelData(0);
+
+        // Convert to Int16Array (PCM16)
+        const pcmData = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          const s = Math.max(-1, Math.min(1, inputData[i]));
+          pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+
+        // Send audio chunk to backend WebSocket
+        try {
+          // Convert Int16Array to base64 for transmission
+          const bytes = new Uint8Array(pcmData.buffer);
+          const base64 = btoa(String.fromCharCode(...bytes));
+
+          wsSend({
+            type: 'audio_chunk',
+            data: {
+              audio: base64,
+              sampleRate: sampleRate,
+              channels: channels,
+              language: language,
+              model: modelName,
+            },
+          });
+
+          setChunksProcessed(prev => prev + 1);
+        } catch (error) {
+          console.error('Failed to send audio chunk:', error);
+        }
+      };
+
+      // Connect analyser to processor to destination
+      analyser.connect(processor);
+      processor.connect(audioContext.destination);
+
+      console.log('Audio capture initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize audio capture:', error);
+      alert(`Failed to access microphone: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // Cleanup audio resources
+  const cleanupAudioCapture = () => {
+    if (audioProcessorRef.current) {
+      audioProcessorRef.current.disconnect();
+      audioProcessorRef.current = null;
+    }
+
+    if (gainNodeRef.current) {
+      gainNodeRef.current.disconnect();
+      gainNodeRef.current = null;
+    }
+
+    if (analyserRef.current) {
+      analyserRef.current.disconnect();
+      analyserRef.current = null;
+    }
+
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    audioDataArrayRef.current = null;
+  };
+
+  // Update audio levels from real audio data
+  useEffect(() => {
+    if (!isRecording || !analyserRef.current || !audioDataArrayRef.current) return;
+
+    const updateAudioLevel = () => {
+      if (!analyserRef.current || !audioDataArrayRef.current) return;
+
+      // Get time domain data (waveform)
+      analyserRef.current.getByteTimeDomainData(audioDataArrayRef.current);
+
+      // Calculate RMS (Root Mean Square) for audio level
+      let sum = 0;
+      for (let i = 0; i < audioDataArrayRef.current.length; i++) {
+        const normalized = (audioDataArrayRef.current[i] - 128) / 128;
+        sum += normalized * normalized;
+      }
+      const rms = Math.sqrt(sum / audioDataArrayRef.current.length);
+      const newLevel = Math.min(100, rms * 100 * 3); // Scale to 0-100
+
       setAudioLevel(newLevel);
       setVadActive(newLevel > vadThreshold * 100);
 
@@ -197,28 +383,15 @@ export const AudioTester: React.FC = () => {
           samples: newSamples.slice(-100), // Keep last 100 samples
         };
       });
+    };
 
-      // Simulate transcription results
-      if (Math.random() > 0.95 && newLevel > 30) {
-        const mockTexts = ['testing', 'audio', 'microphone', 'speech recognition', 'ciao', 'prova'];
-        setTranscriptions(prev => [
-          ...prev,
-          {
-            text: mockTexts[Math.floor(Math.random() * mockTexts.length)],
-            confidence: 0.7 + Math.random() * 0.3,
-            timestamp: new Date().toISOString(),
-            latency: Math.floor(Math.random() * 300),
-          },
-        ]);
-      }
+    // Update at 60 FPS for smooth visualization
+    const intervalId = setInterval(updateAudioLevel, 1000 / 60);
 
-      setChunksProcessed(prev => prev + 1);
-    }, 100);
-
-    return () => clearInterval(interval);
+    return () => clearInterval(intervalId);
   }, [isRecording, vadThreshold]);
 
-  // Draw waveform visualization
+  // Draw waveform visualization with real audio data
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -246,32 +419,42 @@ export const AudioTester: React.FC = () => {
       ctx.fillStyle = '#1e1e1e';
       ctx.fillRect(0, 0, width, height);
 
-      if (isRecording) {
+      if (isRecording && analyserRef.current && audioDataArrayRef.current) {
+        // Get real waveform data
+        analyserRef.current.getByteTimeDomainData(audioDataArrayRef.current);
+
         ctx.strokeStyle = vadActive ? '#4caf50' : '#90caf9';
         ctx.lineWidth = 2;
         ctx.beginPath();
 
-        const centerY = height / 2;
-        const amplitude = (audioLevel / 100) * (height / 2) * 0.8;
+        const sliceWidth = width / audioDataArrayRef.current.length;
+        let x = 0;
 
-        for (let x = 0; x < width; x++) {
-          const y = centerY + Math.sin((x + Date.now() * 0.01) * 0.05) * amplitude;
-          if (x === 0) {
+        for (let i = 0; i < audioDataArrayRef.current.length; i++) {
+          const v = audioDataArrayRef.current[i] / 128.0;
+          const y = (v * height) / 2;
+
+          if (i === 0) {
             ctx.moveTo(x, y);
           } else {
             ctx.lineTo(x, y);
           }
+
+          x += sliceWidth;
         }
 
+        ctx.lineTo(width, height / 2);
         ctx.stroke();
 
+        // Draw center line
         ctx.strokeStyle = '#3e3e42';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(0, centerY);
-        ctx.lineTo(width, centerY);
+        ctx.moveTo(0, height / 2);
+        ctx.lineTo(width, height / 2);
         ctx.stroke();
       } else {
+        // No audio - draw flat line
         ctx.strokeStyle = '#3e3e42';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -291,9 +474,9 @@ export const AudioTester: React.FC = () => {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isRecording, audioLevel, vadActive]);
+  }, [isRecording, vadActive]);
 
-  const handleRecordingToggle = () => {
+  const handleRecordingToggle = async () => {
     if (isRecording) {
       // Stop recording and save log
       const log: TestLog = {
@@ -333,6 +516,12 @@ export const AudioTester: React.FC = () => {
 
       setTestLogs(prev => [...prev, log]);
 
+      // Cleanup audio resources
+      cleanupAudioCapture();
+
+      // Disconnect WebSocket
+      wsDisconnect();
+
       // Reset state
       setIsRecording(false);
       setRecordingStartTime(null);
@@ -349,6 +538,15 @@ export const AudioTester: React.FC = () => {
       setTranscriptions([]);
       setChunksProcessed(0);
       setAudioLevelStats({ min: 0, max: 0, average: 0, samples: [] });
+
+      // Connect to WebSocket backend
+      wsConnect();
+
+      // Wait a bit for WebSocket to connect
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Initialize audio capture
+      await initializeAudioCapture();
     }
   };
 
@@ -414,6 +612,33 @@ export const AudioTester: React.FC = () => {
                 animation: isRecording ? 'pulse 1.5s ease-in-out infinite' : 'none',
               }}
             />
+            {/* Connection Status Indicator */}
+            <Tooltip title={`Backend: ${connectionStatus}${wsError ? ` - ${wsError}` : ''}`}>
+              <Chip
+                size="small"
+                icon={
+                  connectionStatus === 'connected' ? <CheckCircleIcon /> :
+                  connectionStatus === 'error' ? <ErrorIcon /> :
+                  <SyncIcon />
+                }
+                label={
+                  connectionStatus === 'connected' ? 'Connected' :
+                  connectionStatus === 'connecting' ? 'Connecting...' :
+                  connectionStatus === 'reconnecting' ? 'Reconnecting...' :
+                  connectionStatus === 'error' ? 'Error' :
+                  'Disconnected'
+                }
+                color={
+                  connectionStatus === 'connected' ? 'success' :
+                  connectionStatus === 'error' ? 'error' :
+                  'default'
+                }
+                variant={isConnected ? 'filled' : 'outlined'}
+                sx={{
+                  animation: connectionStatus === 'connecting' || connectionStatus === 'reconnecting' ? 'pulse 1.5s ease-in-out infinite' : 'none',
+                }}
+              />
+            </Tooltip>
             {vadActive && (
               <Chip
                 size="small"
@@ -485,6 +710,18 @@ export const AudioTester: React.FC = () => {
           </Box>
         )}
 
+        {/* Connection Error Alert */}
+        {wsError && (
+          <Alert severity="error" onClose={() => {}}>
+            <Typography variant="body2">
+              <strong>Backend Connection Error:</strong> {wsError}
+            </Typography>
+            <Typography variant="caption">
+              Make sure the backend is running at ws://localhost:8000/ws
+            </Typography>
+          </Alert>
+        )}
+
         {/* Recent Transcriptions */}
         {transcriptions.length > 0 && (
           <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 100, overflow: 'auto' }}>
@@ -502,6 +739,15 @@ export const AudioTester: React.FC = () => {
               </Box>
             ))}
           </Paper>
+        )}
+
+        {/* No Transcriptions Yet - Show Waiting Message */}
+        {isRecording && transcriptions.length === 0 && chunksProcessed > 50 && (
+          <Alert severity="info">
+            <Typography variant="body2">
+              Listening for speech... Speak into your microphone to see transcriptions appear here.
+            </Typography>
+          </Alert>
         )}
 
         {/* Main Controls */}
