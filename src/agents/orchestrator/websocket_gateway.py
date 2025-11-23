@@ -6,10 +6,20 @@ Manages WebSocket connections, broadcasts, and lifecycle management.
 import asyncio
 import json
 import logging
-from typing import Dict, Set, Optional, Any
+import struct
+from typing import Dict, Set, Optional, Any, List
 from datetime import datetime
 from fastapi import WebSocket, WebSocketDisconnect
 from enum import Enum
+
+from src.shared.protocols.grpc_pool import ServiceType, get_pool_manager
+
+# Import STT service protobuf definitions
+import sys
+import os
+sys.path.insert(0, '/app/src/core/stt_engine')
+import stt_service_pb2
+import stt_service_pb2_grpc
 
 
 logger = logging.getLogger(__name__)
@@ -43,6 +53,7 @@ class WebSocketManager:
         """Initialize WebSocket manager."""
         self.active_connections: Dict[str, WebSocket] = {}
         self.client_metadata: Dict[str, Dict[str, Any]] = {}
+        self.audio_buffers: Dict[str, List[bytes]] = {}  # Buffer audio chunks per client
         self._lock = asyncio.Lock()
         logger.info("WebSocketManager initialized")
 
@@ -64,6 +75,7 @@ class WebSocketManager:
                     "message_count": 0,
                     "last_activity": datetime.utcnow().isoformat()
                 }
+                self.audio_buffers[client_id] = []  # Initialize audio buffer
 
             logger.info(f"Client {client_id} connected. Total connections: {len(self.active_connections)}")
 
@@ -92,6 +104,9 @@ class WebSocketManager:
         async with self._lock:
             if client_id in self.active_connections:
                 del self.active_connections[client_id]
+
+            if client_id in self.audio_buffers:
+                del self.audio_buffers[client_id]
 
             if client_id in self.client_metadata:
                 connection_duration = None
@@ -314,6 +329,11 @@ class WebSocketManager:
                     message={"type": MessageType.PONG, "timestamp": datetime.utcnow().isoformat()},
                     client_id=client_id
                 )
+
+            elif msg_type == "audio_chunk":
+                # Process audio chunk
+                await self._process_audio_chunk(client_id, data)
+
             else:
                 # Log other message types
                 logger.info(f"Received message from {client_id}: type={msg_type}")
@@ -324,6 +344,122 @@ class WebSocketManager:
                 message={
                     "type": MessageType.ERROR,
                     "error": {"message": "Failed to process message", "code": "MESSAGE_PROCESSING_ERROR"}
+                },
+                client_id=client_id
+            )
+
+    async def _process_audio_chunk(self, client_id: str, data: Dict[str, Any]) -> None:
+        """
+        Process an audio chunk from a client.
+
+        Args:
+            client_id: Client identifier
+            data: Audio chunk data
+        """
+        try:
+            # Extract audio data (convert from list of integers to bytes)
+            audio_data_list = data.get("data", [])
+            if isinstance(audio_data_list, list):
+                # Convert list of integers to bytes
+                audio_bytes = bytes(audio_data_list)
+            elif isinstance(audio_data_list, str):
+                # Handle base64 if needed
+                import base64
+                audio_bytes = base64.b64decode(audio_data_list)
+            else:
+                audio_bytes = audio_data_list
+
+            # Get audio parameters
+            sample_rate = data.get("sample_rate", 16000)
+            chunk_number = data.get("chunk_number", 0)
+            is_final = data.get("is_final", False)
+
+            # Buffer audio chunk
+            if client_id not in self.audio_buffers:
+                self.audio_buffers[client_id] = []
+
+            self.audio_buffers[client_id].append(audio_bytes)
+
+            # Process when we have enough audio or if it's final
+            buffer_size = sum(len(chunk) for chunk in self.audio_buffers[client_id])
+            min_buffer_size = sample_rate * 2 * 2  # 2 seconds at 16kHz, 16-bit = 64KB
+
+            if buffer_size >= min_buffer_size or is_final:
+                # Combine buffered chunks
+                combined_audio = b''.join(self.audio_buffers[client_id])
+                self.audio_buffers[client_id] = []  # Clear buffer
+
+                # Send to STT for transcription
+                await self._transcribe_audio(client_id, combined_audio, sample_rate)
+
+        except Exception as e:
+            logger.error(f"Error processing audio chunk from {client_id}: {e}")
+            await self.send_personal_message(
+                message={
+                    "type": MessageType.ERROR,
+                    "error": {"message": "Failed to process audio chunk", "code": "AUDIO_PROCESSING_ERROR"}
+                },
+                client_id=client_id
+            )
+
+    async def _transcribe_audio(self, client_id: str, audio_data: bytes, sample_rate: int) -> None:
+        """
+        Send audio to STT service for transcription.
+
+        Args:
+            client_id: Client identifier
+            audio_data: Raw audio bytes
+            sample_rate: Audio sample rate
+        """
+        try:
+            start_time = datetime.utcnow()
+            logger.info(f"[{client_id}] Sending {len(audio_data)} bytes to STT service")
+
+            # Get gRPC connection pool
+            pool_manager = get_pool_manager()
+
+            # Call STT service
+            async with pool_manager.get_connection(ServiceType.STT) as conn:
+                channel = conn.get_channel()
+                stub = stt_service_pb2_grpc.STTServiceStub(channel)
+
+                # Create request
+                request = stt_service_pb2.AudioRequest(
+                    audio_data=audio_data,
+                    sample_rate=sample_rate,
+                    language="",  # Auto-detect
+                    task="transcribe",
+                    request_id=client_id
+                )
+
+                # Call STT
+                response = await stub.Transcribe(request)
+
+                # Calculate latency
+                latency_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
+
+                # Send transcription to client
+                await self.send_personal_message(
+                    message={
+                        "type": MessageType.TRANSCRIPTION,
+                        "text": response.text,
+                        "language": response.language,
+                        "duration": response.duration,
+                        "latency_ms": latency_ms,
+                        "confidence": response.segments[0].confidence if response.segments else 0.0,
+                        "timestamp": datetime.utcnow().isoformat()
+                    },
+                    client_id=client_id
+                )
+
+                logger.info(f"[{client_id}] Transcription completed in {latency_ms:.2f}ms: '{response.text}'")
+
+        except Exception as e:
+            logger.error(f"Error transcribing audio for {client_id}: {e}")
+            await self.send_personal_message(
+                message={
+                    "type": MessageType.ERROR,
+                    "error": {"message": "Transcription failed", "code": "STT_ERROR"}
                 },
                 client_id=client_id
             )
