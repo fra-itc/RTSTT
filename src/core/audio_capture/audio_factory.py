@@ -230,6 +230,21 @@ def create_audio_capture(
     return AudioCaptureFactory.create(driver=driver, **kwargs)
 
 
+# Auto-register available drivers after class is defined
+def _register_available_drivers():
+    """Auto-register all available drivers"""
+    try:
+        from .drivers import AVAILABLE_DRIVERS
+        for name, driver_class in AVAILABLE_DRIVERS.items():
+            AudioCaptureFactory.register_driver(name, driver_class)
+    except ImportError as e:
+        logger.warning(f"Could not import drivers: {e}")
+
+
+# Register drivers on module import
+_register_available_drivers()
+
+
 # Export for easy access
 __all__ = [
     'AudioCaptureFactory',
