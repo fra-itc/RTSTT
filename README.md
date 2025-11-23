@@ -119,6 +119,23 @@ python scripts/download_summary_model.py
 
 #### 4. Configure Environment
 
+**Option A: Docker Secrets (Recommended for Security)**
+
+```bash
+# Run interactive setup script
+bash scripts/setup-secrets.sh
+
+# This will create:
+# - infrastructure/secrets/hf_token.txt (HuggingFace token)
+# - infrastructure/secrets/redis_password.txt (Redis password)
+# - infrastructure/secrets/jwt_secret.txt (JWT signing key)
+# - infrastructure/secrets/grafana_admin_password.txt (Grafana password)
+
+# All files are automatically set to permission 600 (secure)
+```
+
+**Option B: Environment Variables (Traditional)**
+
 ```bash
 # Copy environment template
 copy .env.example .env
@@ -127,7 +144,18 @@ copy .env.example .env
 notepad .env
 ```
 
+> 💡 **See [SECRETS.md](SECRETS.md)** for comprehensive secrets management guide
+
 #### 5. Start Services with Docker
+
+**If using Docker Secrets (from Option A above):**
+
+```bash
+# Start all services with secrets
+docker-compose -f docker-compose.yml -f docker-compose.secrets.yml up -d
+```
+
+**If using Environment Variables (from Option B above):**
 
 ```bash
 # Start Redis + monitoring stack

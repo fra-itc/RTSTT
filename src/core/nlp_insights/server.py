@@ -17,6 +17,7 @@ from typing import Optional
 
 from .nlp_service import NLPService, NLPServiceConfig
 from src.shared.grpc_health_server import GRPCHealthServer
+from src.shared.secrets import get_hf_token, get_redis_password
 
 # Configure logging
 logging.basicConfig(
@@ -156,7 +157,11 @@ def main():
     # Read configuration from environment
     redis_host = os.getenv("REDIS_HOST", "localhost")
     redis_port = int(os.getenv("REDIS_PORT", "6379"))
-    hf_token = os.getenv("HF_TOKEN")
+
+    # Read secrets from Docker secrets or environment variables
+    hf_token = get_hf_token(required=False)
+    redis_password = get_redis_password(default="")
+
     enable_diarization = os.getenv("ENABLE_DIARIZATION", "false").lower() == "true"
 
     logger.info(f"Configuration:")
