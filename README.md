@@ -233,41 +233,133 @@ python -m src.cli.export_session --session-id <id> --format srt
 
 ## 🧪 Testing
 
+### Quick Start
+
+Run all audio tests with the convenience script:
+
+```bash
+./scripts/run_audio_tests.sh --all
+```
+
+Or run specific test categories:
+
+```bash
+# Unit tests only
+./scripts/run_audio_tests.sh --unit
+
+# Integration tests only
+./scripts/run_audio_tests.sh --integration
+
+# Performance benchmarks only
+./scripts/run_audio_tests.sh --performance
+
+# Quick tests (skip slow tests)
+./scripts/run_audio_tests.sh --quick
+
+# With coverage report
+./scripts/run_audio_tests.sh --coverage
+```
+
+### Using Pytest Directly
+
 ```bash
 # Run all tests
 pytest
 
-# Unit tests only
-pytest tests/unit
+# Run audio tests only
+pytest -m audio -v
 
-# Integration tests
-pytest tests/integration
+# Run specific test categories
+pytest tests/unit -v              # Unit tests
+pytest tests/integration -v       # Integration tests
+pytest tests/performance -v       # Performance benchmarks
 
-# E2E tests
-pytest tests/e2e
+# Run tests with markers
+pytest -m vad -v                  # VAD tests
+pytest -m websocket -v            # WebSocket tests
+pytest -m "not slow" -v           # Skip slow tests
 
 # With coverage report
-pytest --cov=src --cov-report=html
+pytest --cov=src/core/audio_capture --cov-report=html
 
 # Parallel execution
 pytest -n auto
 ```
 
+### Manual Interactive Tests
+
+Test live microphone capture:
+
+```bash
+# Basic 5-second recording
+python -m tests.manual.test_microphone_capture
+
+# Custom duration with audio levels and VAD display
+python -m tests.manual.test_microphone_capture \
+  --duration 10 \
+  --show-levels \
+  --show-vad \
+  --output test_output/recording.wav
+
+# List available audio devices
+python -m tests.manual.test_microphone_capture --list-devices
+```
+
+### Test Coverage
+
+Current audio test coverage:
+
+- **Audio Capture**: WASAPI, format conversion, device management
+- **VAD Detection**: Silero VAD, speech segmentation, accuracy >90%
+- **Circular Buffer**: Thread-safe buffering, overflow/underflow handling
+- **WebSocket Streaming**: Connection lifecycle, audio transmission, latency
+- **End-to-End Pipeline**: Mic → VAD → Buffer → WS → STT → NLP → Summary
+- **Performance**: Latency benchmarks, throughput tests, memory profiling
+
+### Performance Targets
+
+| Component | Target | Critical |
+|-----------|--------|----------|
+| **STT Processing** | < 200ms | < 500ms |
+| **NLP Processing** | < 100ms | < 200ms |
+| **Total Pipeline** | < 500ms | < 1000ms |
+| **Throughput** | > 10 chunks/sec | > 5 chunks/sec |
+| **Memory Usage** | < 500MB | < 1GB |
+
+### Documentation
+
+For detailed testing information, see:
+
+- **[Audio Testing Guide](tests/AUDIO_TESTING.md)** - Comprehensive testing documentation
+- **[Audio Fixtures README](tests/fixtures/audio/README.md)** - Test audio fixtures
+
 ### Performance Benchmarks
 
 ```bash
-# Latency benchmark
+# Audio latency benchmark (detailed metrics)
+pytest tests/performance/test_audio_latency.py -v
+
+# Throughput and resource utilization
+pytest tests/performance/test_throughput.py -v
+
+# Legacy benchmarks
 python benchmarks/latency_test.py
-
-# Throughput test
 python benchmarks/throughput_test.py
-
-# GPU memory profiling
 python benchmarks/gpu_memory_profile.py
 
 # Load test
 locust -f benchmarks/load_test.py --host http://localhost:8000
 ```
+
+### CI/CD Integration
+
+Tests are organized for different CI/CD scenarios:
+
+- **On Every PR**: Unit tests, basic integration tests
+- **Nightly Builds**: Full integration tests, performance benchmarks
+- **Manual Trigger**: Interactive tests, stress tests
+
+See [Audio Testing Guide](tests/AUDIO_TESTING.md) for CI/CD configuration examples.
 
 ---
 
