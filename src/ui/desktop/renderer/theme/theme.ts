@@ -3,7 +3,7 @@
  * Applies design tokens to Material-UI theme
  */
 
-import { createTheme, ThemeOptions, alpha } from '@mui/material/styles';
+import { createTheme, ThemeOptions } from '@mui/material/styles';
 import { colors, typography, spacing, borderRadius, elevation, breakpoints, transitions, components } from './tokens';
 
 // Common theme options shared between light and dark themes

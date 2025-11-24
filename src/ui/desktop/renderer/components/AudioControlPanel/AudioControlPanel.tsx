@@ -18,10 +18,14 @@ import {
   IconButton,
   Tooltip,
   Divider,
+  Chip,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
   Refresh as RefreshIcon,
+  Wifi as WifiIcon,
+  WifiOff as WifiOffIcon,
+  Circle as CircleIcon,
 } from '@mui/icons-material';
 import { RecordButton } from '../RecordButton';
 import { WaveformVisualizer } from '../WaveformVisualizer';
@@ -46,6 +50,10 @@ export interface AudioControlPanelProps {
   audioLevel: number;
   /** Waveform data */
   waveformData: Float32Array | number[];
+  /** Connection status */
+  connectionStatus?: 'disconnected' | 'connecting' | 'connected' | 'error';
+  /** WebSocket error message */
+  wsError?: string | null;
   /** Language selection (optional) */
   language?: string;
   /** Model selection (optional) */
@@ -70,8 +78,10 @@ export const AudioControlPanel: React.FC<AudioControlPanelProps> = ({
   volume,
   preampGain,
   isRecording,
-  audioLevel,
+  audioLevel: _audioLevel, // Visualized in waveform
   waveformData,
+  connectionStatus = 'disconnected',
+  wsError = null,
   language = 'en',
   model = 'base',
   sampleRate = 16000,
@@ -86,6 +96,46 @@ export const AudioControlPanel: React.FC<AudioControlPanelProps> = ({
 }) => {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
+  // Connection status styling
+  const getConnectionColor = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return 'success';
+      case 'connecting':
+        return 'warning';
+      case 'error':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getConnectionIcon = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return <WifiIcon fontSize="small" />;
+      case 'connecting':
+        return <CircleIcon fontSize="small" />;
+      case 'error':
+        return <WifiOffIcon fontSize="small" />;
+      default:
+        return <WifiOffIcon fontSize="small" />;
+    }
+  };
+
+  const getConnectionLabel = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return 'Connected';
+      case 'connecting':
+        return 'Connecting...';
+      case 'error':
+        return 'Connection Error';
+      default:
+        return 'Disconnected';
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -97,6 +147,19 @@ export const AudioControlPanel: React.FC<AudioControlPanelProps> = ({
         overflow: 'auto',
       }}
     >
+      {/* Connection Status */}
+      <Tooltip title={wsError || 'WebSocket connection status'}>
+        <Chip
+          icon={getConnectionIcon()}
+          label={getConnectionLabel()}
+          color={getConnectionColor()}
+          size="small"
+          sx={{ alignSelf: 'flex-start' }}
+        />
+      </Tooltip>
+
+      <Divider />
+
       {/* Device Selection */}
       <FormControl fullWidth size="small">
         <InputLabel id="device-select-label">Microphone Device</InputLabel>
