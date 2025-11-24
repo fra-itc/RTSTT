@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Box, Grid } from '@mui/material';
+import { Box, Stack, useMediaQuery, useTheme } from '@mui/material';
 import { AppShell } from '../components/layout';
 import { AudioControlPanel } from '../components/AudioControlPanel';
 import { TranscriptionList } from '../components/TranscriptionList';
@@ -15,6 +15,8 @@ import { useAudioPipeline } from '../hooks/useAudioPipeline';
 
 export const MainView: React.FC = () => {
   const audio = useAudioPipeline();
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
 
   /**
    * Handle export transcriptions
@@ -96,8 +98,8 @@ export const MainView: React.FC = () => {
           p: 2,
         }}
       >
-        <Grid
-          container
+        <Stack
+          direction={isDesktop ? 'row' : 'column'}
           spacing={2}
           sx={{
             height: '100%',
@@ -105,37 +107,31 @@ export const MainView: React.FC = () => {
           }}
         >
           {/* Left Column - Transcriptions */}
-          <Grid
-            item
-            xs={12}
-            lg={6}
+          <Box
             sx={{
-              height: { xs: 'auto', lg: '100%' },
-              minHeight: { xs: 400, lg: 0 },
-            }}
-          >
-            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <TranscriptionList
-                transcriptions={audio.transcriptions}
-                onExport={handleExport}
-              />
-            </Box>
-          </Grid>
-
-          {/* Right Column - Insights and Suggestions */}
-          <Grid
-            item
-            xs={12}
-            lg={6}
-            sx={{
-              height: { xs: 'auto', lg: '100%' },
+              flex: isDesktop ? '1 1 50%' : '0 0 auto',
+              height: isDesktop ? '100%' : 'auto',
+              minHeight: isDesktop ? 0 : 400,
               display: 'flex',
               flexDirection: 'column',
-              gap: 2,
+            }}
+          >
+            <TranscriptionList
+              transcriptions={audio.transcriptions}
+              onExport={handleExport}
+            />
+          </Box>
+
+          {/* Right Column - Insights and Suggestions */}
+          <Stack
+            spacing={2}
+            sx={{
+              flex: isDesktop ? '1 1 50%' : '0 0 auto',
+              height: isDesktop ? '100%' : 'auto',
             }}
           >
             {/* Top Right - Insights Panel */}
-            <Box sx={{ flex: 1, minHeight: { xs: 300, lg: 0 } }}>
+            <Box sx={{ flex: 1, minHeight: isDesktop ? 0 : 300 }}>
               <InsightsPanel
                 keywords={audio.insights.keywords}
                 entities={audio.insights.entities}
@@ -146,7 +142,7 @@ export const MainView: React.FC = () => {
             </Box>
 
             {/* Bottom Right - Suggestions Panel */}
-            <Box sx={{ flex: 1, minHeight: { xs: 300, lg: 0 } }}>
+            <Box sx={{ flex: 1, minHeight: isDesktop ? 0 : 300 }}>
               <SuggestionsPanel
                 summary={audio.summary}
                 suggestions={audio.suggestions}
@@ -154,8 +150,8 @@ export const MainView: React.FC = () => {
                 isEmpty={!audio.isRecording && audio.transcriptions.length === 0}
               />
             </Box>
-          </Grid>
-        </Grid>
+          </Stack>
+        </Stack>
       </Box>
     </AppShell>
   );
