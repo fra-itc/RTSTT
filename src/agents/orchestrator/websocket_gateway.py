@@ -497,36 +497,63 @@ class WebSocketManager:
             # Calculate total pipeline latency
             total_latency = (datetime.utcnow() - pipeline_start).total_seconds() * 1000
 
-            # Send enriched response to client
-            response_message = {
-                "type": MessageType.TRANSCRIPTION,
-                "transcription": {
+            # Send separate messages for each pipeline stage
+            # 1. Send transcription result
+            await self.send_personal_message(
+                message={
+                    "type": MessageType.TRANSCRIPTION,
                     "text": transcription_text,
                     "language": stt_response.language,
                     "duration": stt_response.duration,
                     "confidence": stt_response.segments[0].confidence if stt_response.segments else 0.0,
+                    "latency_ms": stt_latency,
+                    "timestamp": datetime.utcnow().isoformat()
                 },
-                "latency": {
-                    "stt_ms": stt_latency,
-                    "nlp_ms": nlp_latency,
-                    "summary_ms": summary_latency,
-                    "total_ms": total_latency
-                },
-                "timestamp": datetime.utcnow().isoformat()
-            }
-
-            # Add NLP results if available
-            if nlp_result:
-                response_message["nlp"] = nlp_result
-
-            # Add summary if available
-            if summary_result:
-                response_message["summary"] = summary_result
-
-            await self.send_personal_message(
-                message=response_message,
                 client_id=client_id
             )
+
+            # 2. Send NLP insights if available
+            if nlp_result:
+                await self.send_personal_message(
+                    message={
+                        "type": "nlp_insights",
+                        "data": {
+                            "keywords": nlp_result.get("keywords", []),
+                            "entities": nlp_result.get("entities", []),
+                            "sentiment": nlp_result.get("sentiment"),
+                        },
+                        "latency_ms": nlp_latency,
+                        "timestamp": datetime.utcnow().isoformat()
+                    },
+                    client_id=client_id
+                )
+
+            # 3. Send summary if available
+            if summary_result:
+                await self.send_personal_message(
+                    message={
+                        "type": "summary",
+                        "summary": summary_result.get("text", ""),
+                        "key_points": summary_result.get("key_points", []),
+                        "compression_ratio": summary_result.get("compression_ratio", 0),
+                        "latency_ms": summary_latency,
+                        "timestamp": datetime.utcnow().isoformat()
+                    },
+                    client_id=client_id
+                )
+
+                # 4. Send AI suggestions based on summary
+                if summary_result.get("key_points"):
+                    await self.send_personal_message(
+                        message={
+                            "type": "suggestions",
+                            "suggestions": [
+                                f"Consider exploring: {point}" for point in summary_result.get("key_points", [])[:3]
+                            ],
+                            "timestamp": datetime.utcnow().isoformat()
+                        },
+                        client_id=client_id
+                    )
 
             logger.info(
                 f"[{client_id}] Full pipeline completed in {total_latency:.0f}ms "
