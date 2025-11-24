@@ -21,6 +21,15 @@ sys.path.insert(0, '/app/src/core/stt_engine')
 import stt_service_pb2
 import stt_service_pb2_grpc
 
+# Import NLP service protobuf definitions
+import nlp_service_pb2
+import nlp_service_pb2_grpc
+
+# Import Summary service protobuf definitions
+sys.path.insert(0, '/app/src/core/summary_generator')
+import summary_service_pb2
+import summary_service_pb2_grpc
+
 
 logger = logging.getLogger(__name__)
 
@@ -458,12 +467,10 @@ class WebSocketManager:
                 )
                 return
 
-            # Step 2: NLP - Analyze sentiment and extract keywords
+            # Step 2: NLP - Analyze sentiment and extract keywords using gRPC service
             nlp_result = None
             try:
                 nlp_start = datetime.utcnow()
-                # For POC, use simple keyword extraction instead of full NLP service
-                # TODO: Integrate with full NLP service via Redis streams for production
                 nlp_result = await self._extract_keywords(transcription_text)
                 nlp_latency = (datetime.utcnow() - nlp_start).total_seconds() * 1000
                 logger.info(f"[{client_id}] NLP completed in {nlp_latency:.0f}ms")
@@ -538,70 +545,148 @@ class WebSocketManager:
 
     async def _extract_keywords(self, text: str) -> Dict[str, Any]:
         """
-        Extract keywords from text (simplified version for POC).
+        Extract keywords and insights from text using NLP gRPC service.
 
         Args:
             text: Input text
 
         Returns:
-            Dictionary with keyword analysis
+            Dictionary with NLP insights
         """
-        # Simple keyword extraction based on word frequency
-        # TODO: Replace with full NLP service integration
-        import re
-        from collections import Counter
+        try:
+            # Get gRPC connection pool
+            pool_manager = get_pool_manager()
 
-        # Remove common words
-        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-                     'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
-                     'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-                     'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these',
-                     'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they'}
+            # Call NLP service
+            async with pool_manager.get_connection(ServiceType.NLP) as conn:
+                channel = conn.get_channel()
+                stub = nlp_service_pb2_grpc.NLPServiceStub(channel)
 
-        # Extract words
-        words = re.findall(r'\b[a-z]+\b', text.lower())
-        filtered_words = [w for w in words if w not in stop_words and len(w) > 3]
+                # Create request
+                request = nlp_service_pb2.TranscriptionRequest(
+                    text=text,
+                    top_keywords=5,  # Request top 5 keywords
+                    enable_entities=True,
+                    enable_sentiment=True
+                )
 
-        # Get top keywords
-        word_counts = Counter(filtered_words)
-        top_keywords = [{"word": word, "count": count}
-                       for word, count in word_counts.most_common(5)]
+                # Call gRPC
+                response = await stub.ExtractInsights(request)
 
-        return {
-            "keywords": top_keywords,
-            "word_count": len(words),
-            "unique_words": len(set(filtered_words))
-        }
+                # Map to expected format
+                keywords = [{"word": kw.keyword, "count": 1, "score": kw.score}
+                           for kw in response.keywords[:5]]
 
-    async def _generate_summary(self, text: str, max_sentences: int = 2) -> Dict[str, Any]:
+                result = {
+                    "keywords": keywords,
+                    "word_count": response.text_stats.word_count if response.text_stats else 0,
+                    "unique_words": int(response.text_stats.lexical_diversity * response.text_stats.word_count) if response.text_stats else 0
+                }
+
+                # Add entities if available
+                if response.entities:
+                    result["entities"] = [
+                        {"text": e.text, "type": e.entity_type, "score": e.confidence}
+                        for e in response.entities
+                    ]
+
+                # Add sentiment if available
+                if response.sentiment:
+                    result["sentiment"] = {
+                        "label": response.sentiment.label,
+                        "confidence": response.sentiment.confidence
+                    }
+
+                return result
+
+        except Exception as e:
+            logger.warning(f"NLP service call failed: {e}, falling back to simple extraction")
+            # Fallback to simple keyword extraction
+            import re
+            from collections import Counter
+
+            stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+                         'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+                         'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+                         'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these',
+                         'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they'}
+
+            words = re.findall(r'\b[a-z]+\b', text.lower())
+            filtered_words = [w for w in words if w not in stop_words and len(w) > 3]
+            word_counts = Counter(filtered_words)
+            top_keywords = [{"word": word, "count": count, "score": count / len(filtered_words)}
+                           for word, count in word_counts.most_common(5)]
+
+            return {
+                "keywords": top_keywords,
+                "word_count": len(words),
+                "unique_words": len(set(filtered_words))
+            }
+
+    async def _generate_summary(self, text: str, max_sentences: int = 3) -> Dict[str, Any]:
         """
-        Generate summary of text (simplified version for POC).
+        Generate summary of text using Summary gRPC service.
 
         Args:
             text: Input text
-            max_sentences: Maximum sentences in summary
+            max_sentences: Maximum sentences in summary (default: 3)
 
         Returns:
             Dictionary with summary
         """
-        # Simple extractive summarization - take first sentences
-        # TODO: Replace with full Summary service integration
-        import re
+        try:
+            # Get gRPC connection pool
+            pool_manager = get_pool_manager()
 
-        sentences = re.split(r'[.!?]+', text)
-        sentences = [s.strip() for s in sentences if s.strip()]
+            # Call Summary service
+            async with pool_manager.get_connection(ServiceType.SUMMARY) as conn:
+                channel = conn.get_channel()
+                stub = summary_service_pb2_grpc.SummaryServiceStub(channel)
 
-        summary_sentences = sentences[:max_sentences]
-        summary_text = '. '.join(summary_sentences)
-        if summary_text and not summary_text.endswith('.'):
-            summary_text += '.'
+                # Create request
+                # Note: proto uses max_length/min_length in words, we'll convert sentences to approximate words
+                # Assuming ~15 words per sentence as a heuristic
+                request = summary_service_pb2.TextRequest(
+                    text=text,
+                    max_length=max_sentences * 15,  # Convert sentences to approximate words
+                    min_length=max_sentences * 5,   # Minimum ~5 words per sentence
+                    use_cache=True
+                )
 
-        return {
-            "text": summary_text,
-            "original_length": len(text),
-            "summary_length": len(summary_text),
-            "compression_ratio": len(summary_text) / len(text) if text else 0
-        }
+                # Call gRPC
+                response = await stub.GenerateSummary(request)
+
+                # Map to expected format
+                return {
+                    "text": response.summary,
+                    "original_length": len(text),
+                    "summary_length": len(response.summary),
+                    "compression_ratio": len(response.summary) / len(text) if text else 0,
+                    "key_points": list(response.key_points) if response.key_points else [],
+                    "cached": response.cached if hasattr(response, 'cached') else False
+                }
+
+        except Exception as e:
+            logger.warning(f"Summary service call failed: {e}, falling back to simple summarization")
+            # Fallback to simple extractive summarization
+            import re
+
+            sentences = re.split(r'[.!?]+', text)
+            sentences = [s.strip() for s in sentences if s.strip()]
+
+            summary_sentences = sentences[:max_sentences]
+            summary_text = '. '.join(summary_sentences)
+            if summary_text and not summary_text.endswith('.'):
+                summary_text += '.'
+
+            return {
+                "text": summary_text,
+                "original_length": len(text),
+                "summary_length": len(summary_text),
+                "compression_ratio": len(summary_text) / len(text) if text else 0,
+                "key_points": summary_sentences,
+                "cached": False
+            }
 
     async def cleanup(self) -> None:
         """Clean up all connections and resources."""
