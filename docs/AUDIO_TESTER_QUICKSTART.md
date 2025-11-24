@@ -1,17 +1,33 @@
 # Audio Tester - Quick Start Guide
 
+## What's New: Real Integration
+
+The Audio Tester now features **REAL** audio capture and backend integration:
+
+✅ **Real Microphone Input**: Uses Web Audio API to capture actual microphone audio
+✅ **Real Waveform**: Live visualization from your actual voice
+✅ **Real Audio Levels**: Calculated from RMS of actual audio data
+✅ **Real Transcriptions**: Live results from backend ML models via WebSocket
+✅ **Real Latency**: Actual response times from backend
+✅ **Real Confidence Scores**: Actual AI confidence from Whisper models
+
+**No more mock data!** Everything you see is real and connected to the actual backend.
+
 ## Prerequisites
 
-1. **Backend Running**: Make sure the RTSTT backend is running
+1. **Backend Running**: Make sure the RTSTT backend is running with WebSocket support
    ```bash
    docker-compose up -d
    ```
    Verify at: http://localhost:8000/health
+   WebSocket endpoint: ws://localhost:8000/ws
 
 2. **Node.js**: Ensure Node.js 18+ is installed
    ```bash
    node --version
    ```
+
+3. **Microphone Access**: Your browser will request microphone permissions when you start recording. Make sure to allow access.
 
 ## Installation
 
@@ -71,22 +87,33 @@ Default settings are optimized for Italian speech:
 
 #### Step 3: Start Recording
 - Click the blue **"Start Test"** button
+- **Browser will request microphone permission** - click "Allow"
 - You'll see:
   - Timer starts counting
   - "Recording" chip appears in green
-  - Waveform visualization activates
+  - **Connection status chip** shows "Connecting..." then "Connected" (green)
+  - Waveform visualization activates with REAL audio from your microphone
+  - Audio level meter shows real-time levels
 
 #### Step 4: Speak Into Microphone
 - Speak clearly in Italian
 - Watch for:
-  - Waveform responding to your voice (blue/green waves)
-  - "Voice Detected" chip appearing (shows VAD is working)
-  - Audio level meter showing 30-60% (green = good)
-  - Transcriptions appearing in real-time below the waveform
+  - **Real waveform** responding to your voice (blue when quiet, green when voice detected)
+  - "Voice Detected" chip appearing when you speak (shows VAD is working)
+  - **Real audio level meter** showing 30-60% (green = good, yellow = loud, red = too loud)
+  - **Real transcriptions** from backend appearing below the waveform with:
+    - Transcribed text
+    - Confidence percentage (how accurate the AI thinks it is)
+    - Latency in milliseconds (how fast the response was)
 
 #### Step 5: Stop Recording
 - Click the red **"Stop"** button
-- Test log is automatically saved
+- Connection status changes to "Disconnected"
+- Test log is automatically saved with:
+  - All transcription results
+  - Real audio level statistics
+  - Actual latency measurements
+  - Device and settings used
 
 ### 4. Review Results
 
@@ -113,10 +140,22 @@ After stopping, check:
 
 ### If Transcriptions are Empty
 
-1. Check **"Voice Detected"** chip appears when you speak
+1. **Check Connection Status** chip:
+   - Must show "Connected" (green) for transcriptions to work
+   - If "Error" or "Disconnected": Check backend is running
+   - Run: `curl http://localhost:8000/health` to verify backend
+
+2. Check **"Voice Detected"** chip appears when you speak
    - If not appearing: Lower VAD threshold to 20%
-2. Verify **Language** is correct (it-IT for Italian)
-3. Speak louder or move microphone closer
+
+3. Verify **Language** is correct (it-IT for Italian)
+
+4. Check audio level meter:
+   - Should show 30-60% when speaking
+   - If too low: Increase volume or preamp gain
+   - If no movement: Check microphone is selected correctly
+
+5. Speak louder or move microphone closer
 
 ### If Transcriptions are Wrong Language
 
@@ -211,9 +250,12 @@ Each test creates one entry with:
 ### "No devices shown"
 
 **Solution:**
-1. Click the **Refresh icon** (🔄) next to Save
+1. Click the **Refresh icon** next to Save
 2. Check microphone is plugged in
-3. Check Windows privacy settings allow microphone access
+3. Check browser/OS privacy settings allow microphone access:
+   - **Chrome/Electron**: Click the microphone icon in address bar
+   - **Windows**: Settings > Privacy > Microphone > Allow apps to access
+   - **Linux**: Check PulseAudio/ALSA settings
 
 ### "Backend not ready" or connection errors
 
@@ -222,12 +264,37 @@ Each test creates one entry with:
 # Check backend is running
 curl http://localhost:8000/health
 
+# Check WebSocket endpoint
+curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" \
+  -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: test" \
+  http://localhost:8000/ws
+
 # If not running, start it
 docker-compose up -d
 
 # Check logs
 docker-compose logs -f
 ```
+
+### "Browser denied microphone permission"
+
+**Solution:**
+1. Click the microphone icon in browser address bar
+2. Change permission to "Allow"
+3. Refresh the page
+4. Try recording again
+
+### Connection Status shows "Error"
+
+**Solution:**
+1. Check backend WebSocket is accessible:
+   ```bash
+   # Should return 101 Switching Protocols
+   websocat ws://localhost:8000/ws
+   ```
+2. Check firewall isn't blocking port 8000
+3. Verify WebSocket URL in Settings panel: `ws://localhost:8000/ws`
+4. Check backend logs for errors: `docker-compose logs -f`
 
 ### Electron window doesn't open
 
