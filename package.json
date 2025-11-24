@@ -14,20 +14,34 @@
     "build:all": "npm run build && npm run build:electron",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.5",
+    "@mui/material": "^7.3.5",
+    "date-fns": "^4.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "ws": "^8.18.3",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "@vitest/ui": "^4.0.13",
     "concurrently": "^9.2.1",
     "cross-env": "^7.0.3",
     "electron": "^31.2.0",
@@ -35,8 +49,12 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.8",
+    "happy-dom": "^20.0.10",
+    "jsdom": "^27.2.0",
+    "playwright": "^1.56.1",
     "typescript": "^5.5.3",
-    "vite": "^5.3.3"
+    "vite": "^5.3.3",
+    "vitest": "^4.0.13"
   },
   "build": {
     "appId": "com.orchidea.rtstt",
@@ -82,5 +100,8 @@
     "vite"
   ],
   "author": "ORCHIDEA Team",
-  "license": "MIT"
+  "license": "MIT",
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.53.3"
+  }
 }

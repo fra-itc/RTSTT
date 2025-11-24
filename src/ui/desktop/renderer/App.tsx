@@ -1,23 +1,16 @@
+/**
+ * App - Main Application Entry Point
+ * Modern UI with integrated audio pipeline
+ */
+
 import React from 'react';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { AppLayout, GridLayout } from './components/Layout/AppLayout';
-import { AudioTester } from './components/AudioTester';
-import TranscriptionPanel from './components/TranscriptionPanel';
-import InsightsPanel from './components/InsightsPanel';
-import { SummaryPanel } from './components/SummaryPanel';
-import { MetricsDashboard } from './components/MetricsDashboard/MetricsDashboard';
+import { ThemeProvider } from './theme/ThemeProvider';
+import { MainView } from './views/MainView';
 
 const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <AppLayout>
-        <GridLayout
-          topLeft={<AudioTester />}
-          topRight={<TranscriptionPanel />}
-          bottomLeft={<InsightsPanel />}
-          bottomRight={<SummaryPanel />}
-        />
-      </AppLayout>
+      <MainView />
     </ThemeProvider>
   );
 };

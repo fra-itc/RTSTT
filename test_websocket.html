@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background-color: #4CAF50; color: white; }
+        .disconnected { background-color: #f44336; color: white; }
+        .connecting { background-color: #ff9800; color: white; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+        #log { background-color: #f5f5f5; padding: 10px; height: 300px; overflow-y: auto; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+
+    <div>
+        <label>WebSocket URL:</label>
+        <input type="text" id="wsUrl" value="ws://localhost:8000/ws" style="width: 300px;">
+    </div>
+
+    <div style="margin-top: 10px;">
+        <button onclick="connectWS()">Connect</button>
+        <button onclick="disconnectWS()">Disconnect</button>
+        <button onclick="sendTest()">Send Test Message</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div id="status" class="status disconnected">Status: Disconnected</div>
+
+    <h3>Log:</h3>
+    <div id="log"></div>
+
+    <script>
+        let ws = null;
+        const logDiv = document.getElementById('log');
+        const statusDiv = document.getElementById('status');
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(status, message) {
+            statusDiv.className = 'status ' + status;
+            statusDiv.textContent = 'Status: ' + message;
+        }
+
+        function connectWS() {
+            const url = document.getElementById('wsUrl').value;
+            log(`Attempting to connect to: ${url}`);
+            updateStatus('connecting', 'Connecting...');
+
+            try {
+                ws = new WebSocket(url);
+
+                ws.onopen = () => {
+                    log('✓ WebSocket connected successfully!');
+                    updateStatus('connected', 'Connected');
+                };
+
+                ws.onclose = (event) => {
+                    log(`✗ WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason}`);
+                    updateStatus('disconnected', 'Disconnected');
+                };
+
+                ws.onerror = (error) => {
+                    log(`✗ WebSocket error occurred`);
+                    console.error('WebSocket error:', error);
+                    updateStatus('disconnected', 'Error');
+                };
+
+                ws.onmessage = (event) => {
+                    log(`← Received: ${event.data}`);
+                };
+
+            } catch (error) {
+                log(`✗ Failed to create WebSocket: ${error.message}`);
+                updateStatus('disconnected', 'Error');
+            }
+        }
+
+        function disconnectWS() {
+            if (ws) {
+                log('Disconnecting...');
+                ws.close();
+                ws = null;
+            } else {
+                log('Not connected');
+            }
+        }
+
+        function sendTest() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const testMessage = JSON.stringify({
+                    type: 'test',
+                    data: 'Hello from test page!'
+                });
+                ws.send(testMessage);
+                log(`→ Sent: ${testMessage}`);
+            } else {
+                log('✗ Cannot send: WebSocket not connected');
+            }
+        }
+
+        function clearLog() {
+            logDiv.innerHTML = '';
+        }
+
+        // Auto-detect current hostname
+        if (window.location.hostname !== 'localhost') {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            document.getElementById('wsUrl').value = `${protocol}//${window.location.hostname}:8000/ws`;
+        }
+
+        log('Ready. Click "Connect" to test WebSocket connection.');
+    </script>
+</body>
+</html>

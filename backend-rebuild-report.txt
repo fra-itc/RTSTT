@@ -1,0 +1,109 @@
+Backend Rebuild Report
+======================
+Date: Mon Nov 24 03:04:25 AM CET 2025
+Status: SUCCESS
+
+## Container Status
+    Name                   Command                  State                        Ports                  
+--------------------------------------------------------------------------------------------------------
+rtstt-backend   uvicorn src.agents.orchest ...   Up (healthy)   0.0.0.0:8000->8000/tcp,:::8000->8000/tcp
+
+## Build Information
+- Prometheus client: 0.19.0
+- Prometheus FastAPI Instrumentator: 6.1.0
+- Container rebuilt: Yes (with --no-cache)
+- Environment variable added: ENABLE_METRICS=true
+
+## Health Check
+{
+    "status": "healthy",
+    "version": "1.0.0",
+    "connections": 0,
+    "timestamp": "2025-11-24T02:04:26.045960"
+}
+
+## Metrics Endpoint
+Status: OPERATIONAL
+Sample Metrics (first 40 lines):
+# HELP python_gc_objects_collected_total Objects collected during gc
+# TYPE python_gc_objects_collected_total counter
+python_gc_objects_collected_total{generation="0"} 3007.0
+python_gc_objects_collected_total{generation="1"} 9702.0
+python_gc_objects_collected_total{generation="2"} 153.0
+# HELP python_gc_objects_uncollectable_total Uncollectable objects found during GC
+# TYPE python_gc_objects_uncollectable_total counter
+python_gc_objects_uncollectable_total{generation="0"} 0.0
+python_gc_objects_uncollectable_total{generation="1"} 0.0
+python_gc_objects_uncollectable_total{generation="2"} 0.0
+# HELP python_gc_collections_total Number of times this generation was collected
+# TYPE python_gc_collections_total counter
+python_gc_collections_total{generation="0"} 177.0
+python_gc_collections_total{generation="1"} 16.0
+python_gc_collections_total{generation="2"} 1.0
+# HELP python_info Python platform information
+# TYPE python_info gauge
+python_info{implementation="CPython",major="3",minor="11",patchlevel="14",version="3.11.14"} 1.0
+# HELP process_virtual_memory_bytes Virtual memory size in bytes.
+# TYPE process_virtual_memory_bytes gauge
+process_virtual_memory_bytes 2.001846272e+09
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 8.0654336e+07
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1.76394976584e+09
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 1.01
+# HELP process_open_fds Number of open file descriptors.
+# TYPE process_open_fds gauge
+process_open_fds 25.0
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+process_max_fds 1.048576e+06
+# HELP transcription_requests_total Total transcription requests
+# TYPE transcription_requests_total counter
+# HELP transcription_latency_seconds Transcription latency in seconds
+# TYPE transcription_latency_seconds histogram
+
+## Prometheus Target Status
+Target: UP
+Job: backend
+Scrape URL: http://backend:8000/metrics
+Scraping: Successfully
+
+## gRPC Connection Pools
+Status: ALL CONNECTED
+- STT Service: 3 connections to stt-engine:50051
+- NLP Service: 2 connections to nlp-service:50052
+- Summary Service: 2 connections to summary-service:50053
+
+## Resource Usage
+rtstt-backend           0.13%     54.23MiB / 30.89GiB   0.17%
+
+## Changes Made
+1. Verified prometheus-client==0.19.0 in requirements/base.txt
+2. Verified prometheus-fastapi-instrumentator==6.1.0 in requirements/base.txt
+3. Stopped and removed old backend container
+4. Rebuilt backend container with --no-cache
+5. Added ENABLE_METRICS=true to docker-compose.yml
+6. Started backend container
+7. Verified metrics endpoint is accessible
+8. Confirmed Prometheus is scraping backend
+
+## Verification Checklist
+✓ Backend container rebuilt successfully
+✓ Backend container starts without errors
+✓ Health endpoint responding (200 OK)
+✓ Metrics endpoint responding (200 OK) - /metrics
+✓ Prometheus scraping backend metrics (target: up)
+✓ gRPC connection pools still working (all 7 connections active)
+✓ No critical errors in logs
+✓ Rebuild report generated
+
+## Next Steps
+- Monitor Prometheus metrics collection over next 5-10 minutes
+- Verify custom metrics (transcription, websocket, grpc) appear when services are used
+- Consider creating Grafana dashboard for backend metrics
+
+Report generated: 2025-11-24 02:04:28 UTC

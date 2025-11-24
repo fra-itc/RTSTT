@@ -1,0 +1,27 @@
+        Name                       Command                  State                          Ports                    
+--------------------------------------------------------------------------------------------------------------------
+rtstt-backend           uvicorn src.agents.orchest ...   Up (healthy)   0.0.0.0:8000->8000/tcp,:::8000->8000/tcp    
+rtstt-dockge            /usr/bin/dumb-init -- tsx  ...   Up (healthy)   0.0.0.0:5001->5001/tcp,:::5001->5001/tcp    
+rtstt-grafana           /run.sh                          Up             0.0.0.0:3001->3000/tcp,:::3001->3000/tcp    
+rtstt-nlp-service       /opt/nvidia/nvidia_entrypo ...   Up (healthy)   0.0.0.0:50052->50052/tcp,:::50052->50052/tcp
+rtstt-prometheus        /bin/prometheus --config.f ...   Up             0.0.0.0:9090->9090/tcp,:::9090->9090/tcp    
+rtstt-redis             docker-entrypoint.sh redis ...   Up (healthy)   0.0.0.0:6379->6379/tcp,:::6379->6379/tcp    
+rtstt-redis-exporter    /redis_exporter --redis.ad ...   Up             0.0.0.0:9121->9121/tcp,:::9121->9121/tcp    
+rtstt-stt-engine        /opt/nvidia/nvidia_entrypo ...   Up (healthy)   0.0.0.0:50051->50051/tcp,:::50051->50051/tcp
+rtstt-summary-service   /opt/nvidia/nvidia_entrypo ...   Up (healthy)   0.0.0.0:50053->50053/tcp,:::50053->50053/tcp
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          13        10        31.6GB    5.777GB (18%)
+Containers      10        10        4.085GB   0B (0%)
+Local Volumes   8         6         163.4MB   0B (0%)
+Build Cache     55        0         0B        0B
+CONTAINER ID   NAME                    CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O   PIDS
+d62b9ff50455   rtstt-backend           0.17%     69.97MiB / 30.89GiB   0.22%     18.9kB / 17.9kB   0B / 0B     29
+54bf8571004d   rtstt-stt-engine        0.15%     1.421GiB / 30.89GiB   4.60%     3.13GB / 48.3MB   0B / 0B     62
+ec8bc1042c98   rtstt-dockge            0.25%     178.3MiB / 30.89GiB   0.56%     6.28kB / 1.37kB   0B / 0B     47
+3576b4f2f72c   rtstt-grafana           0.03%     127.9MiB / 30.89GiB   0.40%     36.9MB / 237kB    0B / 0B     35
+dd00b8fe4e7e   rtstt-prometheus        0.00%     50.74MiB / 30.89GiB   0.16%     369kB / 113kB     0B / 0B     19
+12820748254c   rtstt-redis-exporter    0.00%     20.59MiB / 30.89GiB   0.07%     885kB / 462kB     0B / 0B     11
+abb15b6794a3   rtstt-summary-service   0.15%     1.472GiB / 30.89GiB   4.76%     30.5kB / 15.5kB   0B / 0B     101
+c47b6e97d86a   rtstt-nlp-service       0.16%     746.4MiB / 30.89GiB   2.36%     59.1kB / 21kB     0B / 0B     57
+e3744a498e2d   rtstt-redis             0.12%     14.14MiB / 30.89GiB   0.04%     129kB / 861kB     0B / 0B     6
+f499397d5260   lexe-postgres           0.00%     26.02MiB / 30.89GiB   0.08%     1.88kB / 0B       0B / 0B     7

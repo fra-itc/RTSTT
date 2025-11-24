@@ -39,6 +39,7 @@ services:
       - REDIS_PORT=6379
       - LOG_LEVEL=info
       - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+      - ENABLE_METRICS=true
     volumes:
       - ./src:/app/src:ro
       - ./logs:/app/logs
@@ -215,6 +216,7 @@ services:
     volumes:
       - ./infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./infrastructure/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     networks:
       - rtstt_network

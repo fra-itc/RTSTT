@@ -88,9 +88,19 @@ export interface AppState {
   clearAll: () => void;
 }
 
+// Get default WebSocket URL based on current hostname
+const getDefaultWebSocketUrl = (): string => {
+  if (typeof window === 'undefined') {
+    return 'ws://localhost:8000/ws';
+  }
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const hostname = window.location.hostname;
+  return `${protocol}//${hostname}:8000/ws`;
+};
+
 // Default settings
 const defaultSettings: Settings = {
-  websocketUrl: 'ws://localhost:8000/ws',
+  websocketUrl: getDefaultWebSocketUrl(),
   autoReconnect: true,
   reconnectInterval: 3000,
   maxReconnectAttempts: 10,

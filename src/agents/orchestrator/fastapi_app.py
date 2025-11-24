@@ -11,8 +11,10 @@ from typing import Dict, Any, Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
+from prometheus_client import Counter, Histogram, Gauge, generate_latest
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from .websocket_gateway import websocket_manager, MessageType
 from src.shared.protocols.grpc_pool import (
@@ -146,6 +148,72 @@ app.add_middleware(
 )
 
 
+# Initialize Prometheus instrumentation
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=True,
+    should_respect_env_var=True,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=[".*admin.*", "/metrics"],
+    env_var_name="ENABLE_METRICS",
+    inprogress_name="http_requests_inprogress",
+    inprogress_labels=True,
+)
+
+# Instrument the FastAPI app
+instrumentator.instrument(app).expose(app, endpoint="/metrics")
+
+# Custom Prometheus metrics
+transcription_requests = Counter(
+    'transcription_requests_total',
+    'Total transcription requests',
+    ['language', 'status']
+)
+
+transcription_latency = Histogram(
+    'transcription_latency_seconds',
+    'Transcription latency in seconds',
+    ['service'],  # stt, nlp, summary
+    buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0]
+)
+
+grpc_requests_total = Counter(
+    'grpc_requests_total',
+    'Total gRPC requests',
+    ['service', 'method', 'status']
+)
+
+grpc_request_duration_seconds = Histogram(
+    'grpc_request_duration_seconds',
+    'gRPC request duration in seconds',
+    ['service', 'method'],
+    buckets=[0.01, 0.05, 0.1, 0.5, 1.0, 2.0, 5.0]
+)
+
+active_websocket_connections = Gauge(
+    'websocket_connections_active',
+    'Number of active WebSocket connections',
+    ['endpoint']
+)
+
+websocket_messages_sent_total = Counter(
+    'websocket_messages_sent_total',
+    'Total WebSocket messages sent',
+    ['endpoint', 'message_type']
+)
+
+websocket_messages_received_total = Counter(
+    'websocket_messages_received_total',
+    'Total WebSocket messages received',
+    ['endpoint', 'message_type']
+)
+
+transcription_sessions_active = Gauge(
+    'transcription_sessions_active',
+    'Number of active transcription sessions'
+)
+
+
 # Health check endpoint
 @app.get(
     "/health",
@@ -240,6 +308,9 @@ async def websocket_endpoint(websocket: WebSocket, client_id: Optional[str] = No
         # Connect the client
         await websocket_manager.connect(websocket, client_id)
 
+        # Track active WebSocket connections
+        active_websocket_connections.labels(endpoint='/ws').inc()
+
         # Send welcome message
         await websocket_manager.send_personal_message(
             message={
@@ -251,14 +322,23 @@ async def websocket_endpoint(websocket: WebSocket, client_id: Optional[str] = No
             client_id=client_id
         )
 
+        # Track sent message
+        websocket_messages_sent_total.labels(endpoint='/ws', message_type='status').inc()
+
         # Main message loop
         while True:
             try:
                 # Receive message from client
                 data = await websocket.receive_text()
+                logger.info(f"[WS] Received raw message from {client_id}, length: {len(data)}")
+
+                # Track received message
+                websocket_messages_received_total.labels(endpoint='/ws', message_type='text').inc()
 
                 # Handle the message
+                logger.info(f"[WS] Handling message from {client_id}")
                 await websocket_manager.handle_client_message(client_id, data)
+                logger.info(f"[WS] Message from {client_id} handled successfully")
 
             except WebSocketDisconnect:
                 logger.info(f"Client {client_id} disconnected normally")
@@ -282,6 +362,9 @@ async def websocket_endpoint(websocket: WebSocket, client_id: Optional[str] = No
     finally:
         # Ensure disconnection
         await websocket_manager.disconnect(client_id)
+
+        # Decrement active WebSocket connections
+        active_websocket_connections.labels(endpoint='/ws').dec()
 
 
 # Broadcast endpoint (for testing/admin purposes)
