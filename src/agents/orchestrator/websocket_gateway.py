@@ -363,25 +363,33 @@ class WebSocketManager:
 
         Args:
             client_id: Client identifier
-            data: Audio chunk data
+            data: Audio chunk data from frontend - expects {type: 'audio_chunk', data: {audio: base64, sampleRate, ...}}
         """
         try:
-            # Extract audio data (convert from list of integers to bytes)
-            audio_data_list = data.get("data", [])
-            if isinstance(audio_data_list, list):
-                # Convert list of integers to bytes
-                audio_bytes = bytes(audio_data_list)
-            elif isinstance(audio_data_list, str):
-                # Handle base64 if needed
-                import base64
-                audio_bytes = base64.b64decode(audio_data_list)
-            else:
-                audio_bytes = audio_data_list
+            import base64
 
-            # Get audio parameters
-            sample_rate = data.get("sample_rate", 16000)
+            # Extract nested data object
+            data_payload = data.get("data", {})
+
+            # Extract base64-encoded audio from data.audio
+            audio_base64 = data_payload.get("audio", "")
+            if not audio_base64:
+                logger.warning(f"[{client_id}] No audio data in message")
+                return
+
+            # Decode base64 to bytes
+            try:
+                audio_bytes = base64.b64decode(audio_base64)
+            except Exception as e:
+                logger.error(f"[{client_id}] Failed to decode base64 audio: {e}")
+                return
+
+            # Get audio parameters from data object
+            sample_rate = data_payload.get("sampleRate", 16000)
             chunk_number = data.get("chunk_number", 0)
             is_final = data.get("is_final", False)
+
+            logger.debug(f"[{client_id}] Received audio chunk: {len(audio_bytes)} bytes, {sample_rate} Hz")
 
             # Buffer audio chunk
             if client_id not in self.audio_buffers:
