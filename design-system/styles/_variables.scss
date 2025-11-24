@@ -1,0 +1,205 @@
+/**
+ * Frisco Whisper RTX - SCSS Variables
+ * Design System Version 1.0.0
+ *
+ * DO NOT EDIT MANUALLY - Generated from design tokens
+ * To modify values, edit tokens/*.json files
+ */
+
+// ============================================
+// PRIMARY COLORS
+// ============================================
+
+$neon-green:        #00FF41;      // Primary brand (Verde neon RTX)
+$neon-green-glow:   #00FF4180;    // Glow effect (50% opacity)
+$neon-green-dark:   #00CC33;      // Hover state
+$neon-green-light:  #33FF66;      // Highlights
+
+// ============================================
+// BACKGROUND HIERARCHY
+// ============================================
+
+$bg-primary:        #1A1D2E;      // Main background (blu scuro)
+$bg-secondary:      #242838;      // Card background
+$bg-tertiary:       #2E3244;      // Elevated surfaces
+$bg-quaternary:     #383C52;      // Hover states
+$bg-overlay:        #0F111A;      // Modal backdrop
+
+// ============================================
+// STATUS COLORS
+// ============================================
+
+$status-success:    #00FF41;      // Completed
+$status-processing: #00D4FF;      // Processing (cyan)
+$status-pending:    #FFB800;      // Pending (orange)
+$status-error:      #FF3366;      // Failed (rosso-rosa)
+$status-warning:    #FFD700;      // Warning (gold)
+
+// ============================================
+// NEUTRAL COLORS
+// ============================================
+
+$text-primary:      #FFFFFF;      // Main text
+$text-secondary:    #B8BCC8;      // Secondary text
+$text-tertiary:     #7C8089;      // Muted text
+$text-disabled:     #4A4E5A;      // Disabled state
+
+// ============================================
+// ACCENT COLORS
+// ============================================
+
+$accent-nvidia:     #76B900;      // NVIDIA green
+$accent-rtx:        #00E5FF;      // RTX cyan
+$accent-purple:     #8B5CF6;      // AI/ML purple
+$accent-gold:       #FFD700;      // Premium/GPU
+
+// ============================================
+// UI COLORS
+// ============================================
+
+$border-default:    #2E3244;
+$border-focus:      #00FF41;
+$border-hover:      #00FF4150;
+
+// ============================================
+// SHADOWS & EFFECTS
+// ============================================
+
+$shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.12);
+$shadow-md:         0 4px 8px rgba(0, 0, 0, 0.16);
+$shadow-lg:         0 8px 16px rgba(0, 0, 0, 0.24);
+$shadow-xl:         0 12px 24px rgba(0, 0, 0, 0.32);
+$shadow-glow:       0 0 20px rgba(0, 255, 65, 0.5);
+$shadow-glow-lg:    0 0 40px rgba(0, 255, 65, 0.6);
+$shadow-inner-glow: inset 0 0 20px rgba(0, 255, 65, 0.1);
+
+// ============================================
+// GRADIENTS
+// ============================================
+
+$gradient-rtx:      linear-gradient(135deg, #00FF41 0%, #00D4FF 100%);
+$gradient-nvidia:   linear-gradient(135deg, #76B900 0%, #00FF41 100%);
+$gradient-purple:   linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+$gradient-gold:     linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+
+// ============================================
+// TYPOGRAPHY
+// ============================================
+
+// Font Families
+$font-primary:      'Inter', system-ui, -apple-system, sans-serif;
+$font-mono:         'JetBrains Mono', 'Cascadia Code', monospace;
+$font-display:      'Orbitron', 'Russo One', sans-serif;
+
+// Font Sizes
+$text-xs:           0.75rem;   // 12px
+$text-sm:           0.875rem;  // 14px
+$text-base:         1rem;      // 16px
+$text-lg:           1.125rem;  // 18px
+$text-xl:           1.25rem;   // 20px
+$text-2xl:          1.5rem;    // 24px
+$text-3xl:          2rem;      // 32px
+$text-4xl:          2.5rem;    // 40px
+$text-5xl:          3rem;      // 48px
+
+// Font Weights
+$font-light:        300;
+$font-regular:      400;
+$font-medium:       500;
+$font-semibold:     600;
+$font-bold:         700;
+$font-black:        900;
+
+// Line Heights
+$leading-tight:     1.25;
+$leading-normal:    1.5;
+$leading-relaxed:   1.75;
+
+// Letter Spacing
+$tracking-tighter:  -0.05em;
+$tracking-tight:    -0.025em;
+$tracking-normal:   0;
+$tracking-wide:     0.025em;
+$tracking-wider:    0.05em;
+$tracking-widest:   0.1em;
+
+// ============================================
+// SPACING SCALE
+// ============================================
+
+$space-0:   0;
+$space-1:   0.25rem;   // 4px
+$space-2:   0.5rem;    // 8px
+$space-3:   0.75rem;   // 12px
+$space-4:   1rem;      // 16px
+$space-5:   1.25rem;   // 20px
+$space-6:   1.5rem;    // 24px
+$space-8:   2rem;      // 32px
+$space-10:  2.5rem;    // 40px
+$space-12:  3rem;      // 48px
+$space-16:  4rem;      // 64px
+$space-20:  5rem;      // 80px
+$space-24:  6rem;      // 96px
+
+// ============================================
+// BORDER RADIUS
+// ============================================
+
+$radius-none:   0;
+$radius-sm:     0.25rem;   // 4px
+$radius-base:   0.5rem;    // 8px
+$radius-md:     0.75rem;   // 12px
+$radius-lg:     1rem;      // 16px
+$radius-xl:     1.25rem;   // 20px
+$radius-2xl:    1.5rem;    // 24px
+$radius-full:   9999px;
+
+// ============================================
+// TRANSITIONS
+// ============================================
+
+$transition-fast:    150ms;
+$transition-base:    250ms;
+$transition-slow:    350ms;
+$transition-slower:  500ms;
+
+// Easing Functions
+$ease-linear:        linear;
+$ease-in:            cubic-bezier(0.42, 0, 1, 1);
+$ease-out:           cubic-bezier(0, 0, 0.58, 1);
+$ease-in-out:        cubic-bezier(0.42, 0, 0.58, 1);
+$ease-smooth:        cubic-bezier(0.4, 0, 0.2, 1);
+$ease-bounce:        cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+// ============================================
+// BLUR VALUES
+// ============================================
+
+$blur-none:  0;
+$blur-sm:    4px;
+$blur-base:  8px;
+$blur-md:    12px;
+$blur-lg:    16px;
+$blur-xl:    24px;
+
+// ============================================
+// Z-INDEX SCALE
+// ============================================
+
+$z-index-dropdown:   1000;
+$z-index-sticky:     1020;
+$z-index-fixed:      1030;
+$z-index-modal-backdrop: 1040;
+$z-index-modal:      1050;
+$z-index-popover:    1060;
+$z-index-tooltip:    1070;
+
+// ============================================
+// BREAKPOINTS (Mobile-first)
+// ============================================
+
+$breakpoint-sm:  640px;   // Small devices
+$breakpoint-md:  768px;   // Medium devices
+$breakpoint-lg:  1024px;  // Large devices
+$breakpoint-xl:  1280px;  // Extra large devices
+$breakpoint-2xl: 1536px;  // 2X Extra large devices

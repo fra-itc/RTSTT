@@ -1,0 +1,258 @@
+/**
+ * Frisco Whisper RTX - Button Components
+ * Primary UI interaction elements
+ */
+
+@import '../styles/variables';
+@import '../styles/mixins';
+
+// ============================================
+// BASE BUTTON
+// ============================================
+
+.btn {
+  @include button-reset;
+  @include flex-center;
+  gap: $space-2;
+  padding: $space-3 $space-6;
+  border-radius: $radius-base;
+  font-family: $font-primary;
+  font-size: $text-base;
+  font-weight: $font-semibold;
+  line-height: $leading-tight;
+  cursor: pointer;
+  user-select: none;
+  @include transition(all, $transition-base, $ease-smooth);
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+}
+
+// ============================================
+// PRIMARY BUTTON
+// ============================================
+
+.btn-primary {
+  @extend .btn;
+  background: $neon-green;
+  color: $bg-primary;
+  box-shadow: 0 4px 14px rgba(0, 255, 65, 0.25);
+
+  &:hover:not(:disabled) {
+    background: $neon-green-light;
+    @include neon-glow($neon-green, 1);
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    @include focus-ring($neon-green);
+  }
+}
+
+// ============================================
+// SECONDARY BUTTON
+// ============================================
+
+.btn-secondary {
+  @extend .btn;
+  background: transparent;
+  color: $neon-green;
+  border: 2px solid $neon-green;
+  padding: calc($space-3 - 2px) calc($space-6 - 2px); // Adjust for border
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 255, 65, 0.1);
+    box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.2);
+  }
+
+  &:focus-visible {
+    @include focus-ring($neon-green);
+  }
+}
+
+// ============================================
+// GHOST BUTTON
+// ============================================
+
+.btn-ghost {
+  @extend .btn;
+  background: rgba(255, 255, 255, 0.05);
+  color: $text-secondary;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: $text-primary;
+  }
+
+  &:focus-visible {
+    @include focus-ring($border-focus);
+  }
+}
+
+// ============================================
+// DANGER BUTTON
+// ============================================
+
+.btn-danger {
+  @extend .btn;
+  background: $status-error;
+  color: $text-primary;
+  box-shadow: 0 4px 14px rgba(255, 51, 102, 0.25);
+
+  &:hover:not(:disabled) {
+    background: lighten($status-error, 10%);
+    @include neon-glow($status-error, 1);
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    @include focus-ring($status-error);
+  }
+}
+
+// ============================================
+// SUCCESS BUTTON
+// ============================================
+
+.btn-success {
+  @extend .btn;
+  background: $status-success;
+  color: $bg-primary;
+  box-shadow: 0 4px 14px rgba(0, 255, 65, 0.25);
+
+  &:hover:not(:disabled) {
+    background: $neon-green-light;
+    @include neon-glow($status-success, 1);
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    @include focus-ring($status-success);
+  }
+}
+
+// ============================================
+// BUTTON SIZES
+// ============================================
+
+.btn-sm {
+  padding: $space-2 $space-4;
+  font-size: $text-sm;
+}
+
+.btn-lg {
+  padding: $space-4 $space-8;
+  font-size: $text-lg;
+}
+
+.btn-xl {
+  padding: $space-5 $space-10;
+  font-size: $text-xl;
+}
+
+// ============================================
+// ICON BUTTONS
+// ============================================
+
+.btn-icon {
+  @extend .btn;
+  padding: $space-3;
+  aspect-ratio: 1;
+
+  &.btn-sm {
+    padding: $space-2;
+  }
+
+  &.btn-lg {
+    padding: $space-4;
+  }
+}
+
+// ============================================
+// BUTTON GROUP
+// ============================================
+
+.btn-group {
+  display: inline-flex;
+  gap: $space-2;
+
+  &.btn-group-attached {
+    gap: 0;
+
+    .btn {
+      border-radius: 0;
+
+      &:first-child {
+        border-top-left-radius: $radius-base;
+        border-bottom-left-radius: $radius-base;
+      }
+
+      &:last-child {
+        border-top-right-radius: $radius-base;
+        border-bottom-right-radius: $radius-base;
+      }
+    }
+  }
+}
+
+// ============================================
+// LOADING STATE
+// ============================================
+
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+
+  &::after {
+    @include absolute-center;
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+}
+
+// ============================================
+// GRADIENT BUTTON
+// ============================================
+
+.btn-gradient {
+  @extend .btn;
+  background: $gradient-rtx;
+  color: $bg-primary;
+  border: none;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    @include absolute-fill;
+    content: '';
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    opacity: 0;
+    transition: opacity $transition-base $ease-smooth;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 255, 65, 0.4);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+}

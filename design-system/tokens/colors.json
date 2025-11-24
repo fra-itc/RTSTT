@@ -1,0 +1,144 @@
+{
+  "$schema": "https://tr.designtokens.org/format/schema.json",
+  "frisco-whisper-rtx": {
+    "colors": {
+      "brand": {
+        "neon-green": {
+          "$type": "color",
+          "$value": "#00FF41",
+          "$description": "Primary brand color - Neon green RTX signature"
+        },
+        "neon-green-glow": {
+          "$type": "color",
+          "$value": "#00FF4180",
+          "$description": "Glow effect for primary color (50% opacity)"
+        },
+        "neon-green-dark": {
+          "$type": "color",
+          "$value": "#00CC33",
+          "$description": "Hover and active states"
+        },
+        "neon-green-light": {
+          "$type": "color",
+          "$value": "#33FF66",
+          "$description": "Highlights and accents"
+        }
+      },
+      "background": {
+        "primary": {
+          "$type": "color",
+          "$value": "#1A1D2E",
+          "$description": "Main application background"
+        },
+        "secondary": {
+          "$type": "color",
+          "$value": "#242838",
+          "$description": "Card and container backgrounds"
+        },
+        "tertiary": {
+          "$type": "color",
+          "$value": "#2E3244",
+          "$description": "Elevated surfaces"
+        },
+        "quaternary": {
+          "$type": "color",
+          "$value": "#383C52",
+          "$description": "Hover states"
+        },
+        "overlay": {
+          "$type": "color",
+          "$value": "#0F111A",
+          "$description": "Modal and overlay backdrop"
+        }
+      },
+      "status": {
+        "success": {
+          "$type": "color",
+          "$value": "#00FF41",
+          "$description": "Success states - Completed tasks"
+        },
+        "processing": {
+          "$type": "color",
+          "$value": "#00D4FF",
+          "$description": "Processing states - Active transcriptions"
+        },
+        "pending": {
+          "$type": "color",
+          "$value": "#FFB800",
+          "$description": "Pending states - Queued jobs"
+        },
+        "error": {
+          "$type": "color",
+          "$value": "#FF3366",
+          "$description": "Error states - Failed operations"
+        },
+        "warning": {
+          "$type": "color",
+          "$value": "#FFD700",
+          "$description": "Warning states - Attention needed"
+        }
+      },
+      "text": {
+        "primary": {
+          "$type": "color",
+          "$value": "#FFFFFF",
+          "$description": "Primary text color"
+        },
+        "secondary": {
+          "$type": "color",
+          "$value": "#B8BCC8",
+          "$description": "Secondary text - Less emphasis"
+        },
+        "tertiary": {
+          "$type": "color",
+          "$value": "#7C8089",
+          "$description": "Tertiary text - Muted content"
+        },
+        "disabled": {
+          "$type": "color",
+          "$value": "#4A4E5A",
+          "$description": "Disabled text state"
+        }
+      },
+      "accent": {
+        "nvidia": {
+          "$type": "color",
+          "$value": "#76B900",
+          "$description": "NVIDIA brand green"
+        },
+        "rtx-cyan": {
+          "$type": "color",
+          "$value": "#00E5FF",
+          "$description": "RTX accent cyan"
+        },
+        "ai-purple": {
+          "$type": "color",
+          "$value": "#8B5CF6",
+          "$description": "AI/ML operations purple"
+        },
+        "premium-gold": {
+          "$type": "color",
+          "$value": "#FFD700",
+          "$description": "Premium/GPU tier gold"
+        }
+      },
+      "ui": {
+        "border-default": {
+          "$type": "color",
+          "$value": "#2E3244",
+          "$description": "Default border color"
+        },
+        "border-focus": {
+          "$type": "color",
+          "$value": "#00FF41",
+          "$description": "Focused element border"
+        },
+        "border-hover": {
+          "$type": "color",
+          "$value": "#00FF4150",
+          "$description": "Hover state border (30% opacity)"
+        }
+      }
+    }
+  }
+}

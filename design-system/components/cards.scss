@@ -1,0 +1,141 @@
+/**
+ * Frisco Whisper RTX - Card Components
+ * Container elements for content grouping
+ */
+
+@import '../styles/variables';
+@import '../styles/mixins';
+
+// ============================================
+// BASE CARD
+// ============================================
+
+.card {
+  @include card;
+}
+
+.card-glow {
+  @include card-glow;
+}
+
+// ============================================
+// GLASS CARD
+// ============================================
+
+.card-glass {
+  @include glass;
+  border-radius: $radius-lg;
+  padding: $space-6;
+  @include transition(all);
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    @include inner-glow($neon-green, 0.3);
+  }
+}
+
+// ============================================
+// PROCESSING CARD
+// ============================================
+
+.card-processing {
+  @extend .card;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: $gradient-rtx;
+    animation: shimmer 2s linear infinite;
+  }
+
+  &::after {
+    @include absolute-fill;
+    content: '';
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgba(0, 212, 255, 0.05)
+    );
+    opacity: 0.5;
+    animation: scan-line 4s linear infinite;
+    pointer-events: none;
+  }
+}
+
+// ============================================
+// STATUS CARDS
+// ============================================
+
+.card-success {
+  @extend .card;
+  border-color: rgba($status-success, 0.3);
+  @include inner-glow($status-success, 0.5);
+}
+
+.card-error {
+  @extend .card;
+  border-color: rgba($status-error, 0.3);
+  @include inner-glow($status-error, 0.5);
+}
+
+.card-warning {
+  @extend .card;
+  border-color: rgba($status-warning, 0.3);
+  @include inner-glow($status-warning, 0.5);
+}
+
+// ============================================
+// INTERACTIVE CARD
+// ============================================
+
+.card-interactive {
+  @extend .card;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: $neon-green;
+    @include neon-glow($neon-green, 0.8);
+  }
+
+  &:active {
+    transform: translateY(-2px);
+  }
+}
+
+// ============================================
+// CARD HEADER
+// ============================================
+
+.card-header {
+  @include flex-between;
+  margin-bottom: $space-4;
+  padding-bottom: $space-4;
+  border-bottom: 1px solid $border-default;
+}
+
+// ============================================
+// CARD BODY
+// ============================================
+
+.card-body {
+  color: $text-secondary;
+  line-height: $leading-relaxed;
+}
+
+// ============================================
+// CARD FOOTER
+// ============================================
+
+.card-footer {
+  @include flex-between;
+  margin-top: $space-4;
+  padding-top: $space-4;
+  border-top: 1px solid $border-default;
+}

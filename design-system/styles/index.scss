@@ -1,0 +1,198 @@
+/**
+ * Frisco Whisper RTX - Main Style Index
+ * Import this file to use the complete design system
+ *
+ * Usage:
+ * @import 'design-system/styles/index.scss';
+ */
+
+// ============================================
+// FOUNDATION
+// ============================================
+
+@import './variables';
+@import './mixins';
+@import './animations';
+
+// ============================================
+// COMPONENTS
+// ============================================
+
+@import '../components/buttons';
+@import '../components/cards';
+@import '../components/badges';
+
+// ============================================
+// GLOBAL STYLES
+// ============================================
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: $font-primary;
+  font-size: $text-base;
+  line-height: $leading-normal;
+  color: $text-primary;
+  background: $bg-primary;
+
+  // Custom scrollbar
+  @include custom-scrollbar;
+}
+
+// ============================================
+// TYPOGRAPHY
+// ============================================
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-display;
+  font-weight: $font-bold;
+  line-height: $leading-tight;
+  letter-spacing: $tracking-wide;
+  margin-bottom: $space-4;
+}
+
+h1 {
+  font-size: $text-5xl;
+  font-weight: $font-black;
+}
+
+h2 {
+  font-size: $text-4xl;
+}
+
+h3 {
+  font-size: $text-3xl;
+}
+
+h4 {
+  font-size: $text-2xl;
+}
+
+h5 {
+  font-size: $text-xl;
+}
+
+h6 {
+  font-size: $text-lg;
+}
+
+p {
+  margin-bottom: $space-4;
+  color: $text-secondary;
+}
+
+a {
+  color: $neon-green;
+  text-decoration: none;
+  @include transition-colors;
+
+  &:hover {
+    color: $neon-green-light;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+code {
+  font-family: $font-mono;
+  font-size: 0.9em;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.2em 0.4em;
+  border-radius: $radius-sm;
+}
+
+pre {
+  font-family: $font-mono;
+  background: $bg-secondary;
+  padding: $space-4;
+  border-radius: $radius-base;
+  overflow-x: auto;
+  @include custom-scrollbar;
+}
+
+// ============================================
+// UTILITY CLASSES
+// ============================================
+
+.text-primary { color: $text-primary; }
+.text-secondary { color: $text-secondary; }
+.text-tertiary { color: $text-tertiary; }
+.text-disabled { color: $text-disabled; }
+
+.bg-primary { background: $bg-primary; }
+.bg-secondary { background: $bg-secondary; }
+.bg-tertiary { background: $bg-tertiary; }
+
+.font-display { font-family: $font-display; }
+.font-mono { font-family: $font-mono; }
+
+.truncate { @include truncate; }
+.line-clamp-2 { @include line-clamp(2); }
+.line-clamp-3 { @include line-clamp(3); }
+
+.flex { display: flex; }
+.flex-center { @include flex-center; }
+.flex-between { @include flex-between; }
+.flex-col { @include flex-col; }
+
+.neon-glow { @include neon-glow($neon-green, 1); }
+.neon-text-glow { @include neon-text-glow($neon-green, 1); }
+.gradient-text-rtx { @include gradient-text($gradient-rtx); }
+.gradient-text-nvidia { @include gradient-text($gradient-nvidia); }
+
+.glass { @include glass; }
+.glass-dark { @include glass-dark; }
+
+// ============================================
+// RESPONSIVE UTILITIES
+// ============================================
+
+.sm\:hidden { @include sm { display: none; } }
+.md\:hidden { @include md { display: none; } }
+.lg\:hidden { @include lg { display: none; } }
+
+.sm\:block { @include sm { display: block; } }
+.md\:block { @include md { display: block; } }
+.lg\:block { @include lg { display: block; } }
+
+// ============================================
+// DARK MODE SUPPORT
+// ============================================
+
+@media (prefers-color-scheme: light) {
+  body {
+    // Optionally override for light mode
+    // Currently designed for dark mode by default
+  }
+}
+
+// ============================================
+// PRINT STYLES
+// ============================================
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  @page {
+    margin: 2cm;
+  }
+}

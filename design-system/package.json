@@ -1,0 +1,57 @@
+{
+  "name": "@frisco/whisper-rtx-design-system",
+  "version": "1.0.0",
+  "description": "Complete design system for Frisco Whisper RTX application",
+  "main": "styles/index.scss",
+  "style": "styles/index.scss",
+  "files": [
+    "tokens/",
+    "styles/",
+    "components/",
+    "assets/",
+    "docs/",
+    "tailwind.config.js",
+    "README.md"
+  ],
+  "keywords": [
+    "design-system",
+    "ui",
+    "scss",
+    "tailwind",
+    "rtx",
+    "whisper",
+    "brand"
+  ],
+  "author": "Frisco RTX Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fra-itc/RTSTT",
+    "directory": "design-system"
+  },
+  "scripts": {
+    "build": "npm run build:tokens && npm run build:scss",
+    "build:tokens": "echo 'Design tokens already in JSON format'",
+    "build:scss": "sass styles/index.scss:dist/styles.css --style=compressed",
+    "build:tailwind": "tailwindcss -c tailwind.config.js -o dist/tailwind.css --minify",
+    "watch": "sass styles/index.scss:dist/styles.css --watch",
+    "lint": "stylelint 'styles/**/*.scss' 'components/**/*.scss'",
+    "format": "prettier --write 'styles/**/*.scss' 'components/**/*.scss'",
+    "docs": "echo 'View README.md and docs/BRAND_GUIDELINES.md'"
+  },
+  "devDependencies": {
+    "sass": "^1.69.0",
+    "tailwindcss": "^3.3.0",
+    "stylelint": "^15.11.0",
+    "stylelint-config-standard-scss": "^11.1.0",
+    "prettier": "^3.1.0"
+  },
+  "peerDependencies": {
+    "sass": "^1.69.0",
+    "tailwindcss": "^3.3.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}

@@ -1,0 +1,170 @@
+/**
+ * Frisco Whisper RTX - Badge Components
+ * Status indicators and labels
+ */
+
+@import '../styles/variables';
+@import '../styles/mixins';
+
+// ============================================
+// BASE BADGE
+// ============================================
+
+.badge {
+  @include flex-center;
+  gap: $space-2;
+  padding: calc($space-2 - 1px) calc($space-3 - 1px);
+  border-radius: $radius-full;
+  font-size: $text-sm;
+  font-weight: $font-semibold;
+  line-height: 1;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+// ============================================
+// STATUS BADGES
+// ============================================
+
+.badge-success {
+  background: rgba(0, 255, 65, 0.2);
+  color: $status-success;
+  border-color: rgba(0, 255, 65, 0.3);
+
+  &.badge-solid {
+    background: $status-success;
+    color: $bg-primary;
+    border-color: $status-success;
+  }
+}
+
+.badge-processing {
+  background: rgba(0, 212, 255, 0.2);
+  color: $status-processing;
+  border-color: rgba(0, 212, 255, 0.3);
+  position: relative;
+
+  &::before {
+    content: '';
+    @include status-pulse($status-processing);
+    margin-right: -$space-1;
+  }
+
+  &.badge-solid {
+    background: $status-processing;
+    color: $bg-primary;
+    border-color: $status-processing;
+  }
+}
+
+.badge-pending {
+  background: rgba(255, 184, 0, 0.2);
+  color: $status-pending;
+  border-color: rgba(255, 184, 0, 0.3);
+
+  &.badge-solid {
+    background: $status-pending;
+    color: $bg-primary;
+    border-color: $status-pending;
+  }
+}
+
+.badge-error {
+  background: rgba(255, 51, 102, 0.2);
+  color: $status-error;
+  border-color: rgba(255, 51, 102, 0.3);
+
+  &.badge-solid {
+    background: $status-error;
+    color: $text-primary;
+    border-color: $status-error;
+  }
+}
+
+.badge-warning {
+  background: rgba(255, 215, 0, 0.2);
+  color: $status-warning;
+  border-color: rgba(255, 215, 0, 0.3);
+
+  &.badge-solid {
+    background: $status-warning;
+    color: $bg-primary;
+    border-color: $status-warning;
+  }
+}
+
+// ============================================
+// ACCENT BADGES
+// ============================================
+
+.badge-nvidia {
+  background: rgba(118, 185, 0, 0.2);
+  color: $accent-nvidia;
+  border-color: rgba(118, 185, 0, 0.3);
+
+  &.badge-solid {
+    background: $accent-nvidia;
+    color: $text-primary;
+  }
+}
+
+.badge-rtx {
+  background: rgba(0, 229, 255, 0.2);
+  color: $accent-rtx;
+  border-color: rgba(0, 229, 255, 0.3);
+
+  &.badge-solid {
+    background: $accent-rtx;
+    color: $bg-primary;
+  }
+}
+
+.badge-ai {
+  background: rgba(139, 92, 246, 0.2);
+  color: $accent-purple;
+  border-color: rgba(139, 92, 246, 0.3);
+
+  &.badge-solid {
+    background: $accent-purple;
+    color: $text-primary;
+  }
+}
+
+// ============================================
+// BADGE SIZES
+// ============================================
+
+.badge-sm {
+  padding: calc($space-1 - 1px) calc($space-2 - 1px);
+  font-size: $text-xs;
+}
+
+.badge-lg {
+  padding: calc($space-3 - 1px) calc($space-4 - 1px);
+  font-size: $text-base;
+}
+
+// ============================================
+// BADGE DOT (Minimal indicator)
+// ============================================
+
+.badge-dot {
+  @include status-dot($neon-green, 10px);
+
+  &.badge-success {
+    background: $status-success;
+  }
+
+  &.badge-processing {
+    background: $status-processing;
+    @include pulse-animation;
+  }
+
+  &.badge-pending {
+    background: $status-pending;
+  }
+
+  &.badge-error {
+    background: $status-error;
+  }
+}
