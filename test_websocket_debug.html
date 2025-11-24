@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Debug Test</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:* ws://127.0.0.1:* ws://192.168.*:* ws://10.*:* wss://localhost:* wss://127.0.0.1:* wss://192.168.*:* wss://10.*:*;" />
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background-color: #4CAF50; color: white; }
+        .disconnected { background-color: #f44336; color: white; }
+        .connecting { background-color: #ff9800; color: white; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+        #log { background-color: #f5f5f5; padding: 10px; height: 300px; overflow-y: auto; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Debug Test with CSP</h1>
+    <p>This page has the SAME Content Security Policy as the React app.</p>
+
+    <div>
+        <label>WebSocket URL:</label>
+        <input type="text" id="wsUrl" value="ws://localhost:8000/ws" style="width: 300px;">
+    </div>
+
+    <div style="margin-top: 10px;">
+        <button onclick="connectWS()">Connect</button>
+        <button onclick="disconnectWS()">Disconnect</button>
+        <button onclick="sendTest()">Send Test Message</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div id="status" class="status disconnected">Status: Disconnected</div>
+
+    <h3>Log:</h3>
+    <div id="log"></div>
+
+    <script>
+        let ws = null;
+        const logDiv = document.getElementById('log');
+        const statusDiv = document.getElementById('status');
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(status, message) {
+            statusDiv.className = 'status ' + status;
+            statusDiv.textContent = 'Status: ' + message;
+        }
+
+        function connectWS() {
+            const url = document.getElementById('wsUrl').value;
+            log(`Attempting to connect to: ${url}`);
+            updateStatus('connecting', 'Connecting...');
+
+            try {
+                log('Creating WebSocket object...');
+                ws = new WebSocket(url);
+                log('WebSocket object created, waiting for connection...');
+
+                ws.onopen = () => {
+                    log('✓ WebSocket connected successfully!');
+                    updateStatus('connected', 'Connected');
+                };
+
+                ws.onclose = (event) => {
+                    log(`✗ WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason}`);
+                    updateStatus('disconnected', 'Disconnected');
+                };
+
+                ws.onerror = (error) => {
+                    log(`✗ WebSocket error occurred`);
+                    console.error('WebSocket error:', error);
+                    updateStatus('disconnected', 'Error');
+                };
+
+                ws.onmessage = (event) => {
+                    log(`← Received: ${event.data}`);
+                };
+
+            } catch (error) {
+                log(`✗ Failed to create WebSocket: ${error.message}`);
+                updateStatus('disconnected', 'Error');
+                console.error(error);
+            }
+        }
+
+        function disconnectWS() {
+            if (ws) {
+                log('Disconnecting...');
+                ws.close();
+                ws = null;
+            } else {
+                log('Not connected');
+            }
+        }
+
+        function sendTest() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const testMessage = JSON.stringify({
+                    type: 'test',
+                    data: 'Hello from debug page!'
+                });
+                ws.send(testMessage);
+                log(`→ Sent: ${testMessage}`);
+            } else {
+                log('✗ Cannot send: WebSocket not connected');
+            }
+        }
+
+        function clearLog() {
+            logDiv.innerHTML = '';
+        }
+
+        log('Ready. This page has CSP enabled. Click "Connect" to test WebSocket connection.');
+
+        // Test if CSP blocks WebSocket
+        log('Testing CSP compatibility...');
+        try {
+            const testWs = new WebSocket('ws://localhost:8000/ws');
+            testWs.onopen = () => {
+                log('✓ CSP allows WebSocket connections');
+                testWs.close();
+            };
+            testWs.onerror = () => {
+                log('✗ CSP may be blocking WebSocket connections');
+            };
+            setTimeout(() => {
+                if (testWs.readyState === WebSocket.CONNECTING) {
+                    log('⚠ WebSocket still connecting after 2s, may be blocked');
+                    testWs.close();
+                }
+            }, 2000);
+        } catch (e) {
+            log('✗ CSP is blocking WebSocket creation: ' + e.message);
+        }
+    </script>
+</body>
+</html>

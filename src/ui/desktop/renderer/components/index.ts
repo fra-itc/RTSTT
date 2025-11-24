@@ -1,6 +1,8 @@
 // Main Panel Components
 export { SummaryPanel } from './SummaryPanel';
 export { SettingsPanel } from './SettingsPanel';
+export { InsightsPanel } from './InsightsPanel';
+export { SuggestionsPanel } from './SuggestionsPanel';
 
 // UI Components
 export * from './ui';

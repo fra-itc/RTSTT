@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple React WebSocket Test</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:* ws://127.0.0.1:* ws://192.168.*:* ws://10.*:* wss://localhost:* wss://127.0.0.1:* wss://192.168.*:* wss://10.*:*;" />
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background-color: #4CAF50; color: white; }
+        .disconnected { background-color: #f44336; color: white; }
+        .connecting { background-color: #ff9800; color: white; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+        #log { background-color: #f5f5f5; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Simple React WebSocket Test</h1>
+    <p>This tests WebSocket in a React component with the same CSP as the main app.</p>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        function WebSocketTest() {
+            const [status, setStatus] = useState('disconnected');
+            const [logs, setLogs] = useState([]);
+            const [url, setUrl] = useState('ws://localhost:8000/ws');
+            const wsRef = useRef(null);
+
+            const addLog = (message) => {
+                const timestamp = new Date().toLocaleTimeString();
+                const logMessage = `[${timestamp}] ${message}`;
+                console.log(logMessage);
+                setLogs(prev => [...prev, logMessage]);
+            };
+
+            const connect = () => {
+                addLog(`Attempting to connect to: ${url}`);
+                setStatus('connecting');
+
+                if (wsRef.current) {
+                    addLog('Closing existing connection...');
+                    wsRef.current.close();
+                    wsRef.current = null;
+                }
+
+                try {
+                    addLog('Creating new WebSocket...');
+                    const ws = new WebSocket(url);
+                    wsRef.current = ws;
+                    addLog('WebSocket object created');
+
+                    ws.onopen = () => {
+                        addLog('✓ WebSocket connected!');
+                        setStatus('connected');
+                    };
+
+                    ws.onclose = (event) => {
+                        addLog(`WebSocket closed: ${event.code} - ${event.reason}`);
+                        setStatus('disconnected');
+                        wsRef.current = null;
+                    };
+
+                    ws.onerror = (error) => {
+                        addLog('✗ WebSocket error occurred');
+                        console.error('WebSocket error:', error);
+                        setStatus('error');
+                    };
+
+                    ws.onmessage = (event) => {
+                        addLog(`← Received: ${event.data}`);
+                    };
+                } catch (error) {
+                    addLog(`✗ Failed to create WebSocket: ${error.message}`);
+                    setStatus('error');
+                    console.error(error);
+                }
+            };
+
+            const disconnect = () => {
+                if (wsRef.current) {
+                    addLog('Disconnecting...');
+                    wsRef.current.close();
+                    wsRef.current = null;
+                }
+            };
+
+            useEffect(() => {
+                addLog('Component mounted');
+                return () => {
+                    addLog('Component unmounting...');
+                    if (wsRef.current) {
+                        wsRef.current.close();
+                    }
+                };
+            }, []);
+
+            return (
+                <div>
+                    <div style={{ marginBottom: '20px' }}>
+                        <input
+                            type="text"
+                            value={url}
+                            onChange={(e) => setUrl(e.target.value)}
+                            style={{ width: '300px', marginRight: '10px' }}
+                        />
+                        <button onClick={connect} disabled={status === 'connected'}>
+                            Connect
+                        </button>
+                        <button onClick={disconnect} disabled={status !== 'connected'} style={{ marginLeft: '10px' }}>
+                            Disconnect
+                        </button>
+                    </div>
+
+                    <div className={`status ${status === 'connected' ? 'connected' : status === 'connecting' ? 'connecting' : 'disconnected'}`}>
+                        Status: {status}
+                    </div>
+
+                    <div id="log">
+                        {logs.map((log, i) => (
+                            <div key={i}>{log}</div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+            <React.StrictMode>
+                <WebSocketTest />
+            </React.StrictMode>
+        );
+    </script>
+</body>
+</html>

@@ -3,61 +3,61 @@
  * Centralized design values for the ORCHIDEA RTSTT application
  */
 
-// Color Palette
+// Color Palette - Professional & Accessible (WCAG AA Compliant)
 export const colors = {
-  // Primary colors
+  // Primary colors - Modern Blue
   primary: {
-    main: '#1976d2',
-    dark: '#115293',
-    light: '#42a5f5',
-    lighter: '#90caf9',
-    contrast: '#ffffff',
+    main: '#0066CC',      // Deep professional blue
+    dark: '#004C99',      // Darker blue for contrast
+    light: '#3385DB',     // Lighter blue for hover states
+    lighter: '#66A3E0',   // Very light blue for backgrounds
+    contrast: '#FFFFFF',  // White text for good contrast
   },
-  // Secondary colors
+  // Secondary colors - Elegant Purple
   secondary: {
-    main: '#dc004e',
-    dark: '#9a0036',
-    light: '#f48fb1',
-    contrast: '#ffffff',
+    main: '#7C3AED',      // Rich purple
+    dark: '#5B21B6',      // Deep purple
+    light: '#A78BFA',     // Light purple
+    contrast: '#FFFFFF',  // White text
   },
   // Semantic colors
   success: {
-    main: '#4caf50',
-    dark: '#388e3c',
-    light: '#66bb6a',
+    main: '#059669',      // Modern green (better than Material default)
+    dark: '#047857',      // Dark green
+    light: '#10B981',     // Light green
   },
   warning: {
-    main: '#ff9800',
-    dark: '#f57c00',
-    light: '#ffa726',
+    main: '#F59E0B',      // Amber warning
+    dark: '#D97706',      // Dark amber
+    light: '#FBBF24',     // Light amber
   },
   error: {
-    main: '#f44336',
-    dark: '#d32f2f',
-    light: '#ef5350',
+    main: '#DC2626',      // Modern red
+    dark: '#B91C1C',      // Dark red
+    light: '#EF4444',     // Light red
   },
   info: {
-    main: '#2196f3',
-    dark: '#1976d2',
-    light: '#64b5f6',
+    main: '#0EA5E9',      // Sky blue
+    dark: '#0284C7',      // Dark sky blue
+    light: '#38BDF8',     // Light sky blue
   },
-  // Light theme
+  // Light theme - Clean & Modern
   light: {
-    background: '#fafafa',
-    surface: '#ffffff',
-    textPrimary: '#212121',
-    textSecondary: '#757575',
-    border: '#e0e0e0',
-    divider: '#eeeeee',
+    background: '#F8FAFC',    // Slightly blue-tinted white
+    surface: '#FFFFFF',       // Pure white for cards
+    textPrimary: '#0F172A',   // Near-black with blue tint
+    textSecondary: '#64748B', // Medium gray-blue
+    border: '#E2E8F0',        // Light gray-blue
+    divider: '#F1F5F9',       // Very light gray-blue
   },
-  // Dark theme
+  // Dark theme - Rich & Professional
   dark: {
-    background: '#121212',
-    surface: '#1e1e1e',
-    textPrimary: '#ffffff',
-    textSecondary: '#b0b0b0',
-    border: '#2e2e2e',
-    divider: '#2e2e2e',
+    background: '#0F172A',    // Deep navy blue
+    surface: '#1E293B',       // Lighter navy for cards
+    textPrimary: '#F8FAFC',   // Off-white for readability
+    textSecondary: '#94A3B8', // Medium gray-blue
+    border: '#334155',        // Visible dark border
+    divider: '#1E293B',       // Subtle divider
   },
 };
 

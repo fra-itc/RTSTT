@@ -1,13 +1,16 @@
 /**
  * MainView - Main application view
  * Wires all components together with useAudioPipeline hook
+ * Features responsive grid layout with transcriptions, insights, and suggestions
  */
 
 import React from 'react';
-import { Box } from '@mui/material';
+import { Box, Grid } from '@mui/material';
 import { AppShell } from '../components/layout';
 import { AudioControlPanel } from '../components/AudioControlPanel';
 import { TranscriptionList } from '../components/TranscriptionList';
+import { InsightsPanel } from '../components/InsightsPanel';
+import { SuggestionsPanel } from '../components/SuggestionsPanel';
 import { useAudioPipeline } from '../hooks/useAudioPipeline';
 
 export const MainView: React.FC = () => {
@@ -88,16 +91,71 @@ export const MainView: React.FC = () => {
     >
       <Box
         sx={{
-          display: 'flex',
-          flexDirection: 'column',
           height: '100%',
-          gap: 2,
+          overflow: 'hidden',
+          p: 2,
         }}
       >
-        <TranscriptionList
-          transcriptions={audio.transcriptions}
-          onExport={handleExport}
-        />
+        <Grid
+          container
+          spacing={2}
+          sx={{
+            height: '100%',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Left Column - Transcriptions */}
+          <Grid
+            item
+            xs={12}
+            lg={6}
+            sx={{
+              height: { xs: 'auto', lg: '100%' },
+              minHeight: { xs: 400, lg: 0 },
+            }}
+          >
+            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <TranscriptionList
+                transcriptions={audio.transcriptions}
+                onExport={handleExport}
+              />
+            </Box>
+          </Grid>
+
+          {/* Right Column - Insights and Suggestions */}
+          <Grid
+            item
+            xs={12}
+            lg={6}
+            sx={{
+              height: { xs: 'auto', lg: '100%' },
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+            }}
+          >
+            {/* Top Right - Insights Panel */}
+            <Box sx={{ flex: 1, minHeight: { xs: 300, lg: 0 } }}>
+              <InsightsPanel
+                keywords={audio.insights.keywords}
+                entities={audio.insights.entities}
+                sentiment={audio.insights.sentiment}
+                isLoading={audio.isRecording && audio.transcriptions.length > 0 && !audio.insights.keywords.length}
+                isEmpty={!audio.isRecording && audio.transcriptions.length === 0}
+              />
+            </Box>
+
+            {/* Bottom Right - Suggestions Panel */}
+            <Box sx={{ flex: 1, minHeight: { xs: 300, lg: 0 } }}>
+              <SuggestionsPanel
+                summary={audio.summary}
+                suggestions={audio.suggestions}
+                isLoading={audio.isRecording && audio.transcriptions.length > 0 && !audio.summary}
+                isEmpty={!audio.isRecording && audio.transcriptions.length === 0}
+              />
+            </Box>
+          </Grid>
+        </Grid>
       </Box>
     </AppShell>
   );

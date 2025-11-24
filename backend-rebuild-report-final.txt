@@ -1,0 +1,9 @@
+/home/frisco/projects/RTSTT/backend-rebuild-report.txt: line 1: Backend: command not found
+/home/frisco/projects/RTSTT/backend-rebuild-report.txt: line 2: ======================: command not found
+/home/frisco/projects/RTSTT/backend-rebuild-report.txt: line 3: Date:: command not found
+/home/frisco/projects/RTSTT/backend-rebuild-report.txt: line 4: Status:: command not found
+/home/frisco/projects/RTSTT/backend-rebuild-report.txt: line 7: Name: command not found
+/home/frisco/projects/RTSTT/backend-rebuild-report.txt: line 10: -: command not found
+/home/frisco/projects/RTSTT/backend-rebuild-report.txt: line 11: -: command not found
+/home/frisco/projects/RTSTT/backend-rebuild-report.txt: line 12: syntax error near unexpected token `('
+/home/frisco/projects/RTSTT/backend-rebuild-report.txt: line 12: `- Container rebuilt: Yes (with --no-cache)'

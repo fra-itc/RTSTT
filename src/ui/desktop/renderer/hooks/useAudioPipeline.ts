@@ -18,6 +18,31 @@ export interface Transcription {
   latency: number;
 }
 
+export interface Keyword {
+  keyword: string;
+  score: number;
+}
+
+export interface NamedEntity {
+  text: string;
+  type: string;
+  confidence?: number;
+}
+
+export interface Sentiment {
+  label: string;
+  score: number;
+  positive?: number;
+  neutral?: number;
+  negative?: number;
+}
+
+export interface Insights {
+  keywords: Keyword[];
+  entities: NamedEntity[];
+  sentiment?: Sentiment;
+}
+
 export interface AudioPipelineState {
   // Device management
   devices: AudioDevice[];
@@ -51,6 +76,11 @@ export interface AudioPipelineState {
   waveformData: Float32Array;
   transcriptions: Transcription[];
   chunksProcessed: number;
+
+  // NLP Insights
+  insights: Insights;
+  summary: string;
+  suggestions: string[];
 
   // Handlers
   loadDevices: () => Promise<void>;
@@ -98,21 +128,30 @@ export const useAudioPipeline = (): AudioPipelineState => {
 
   // Audio settings
   const [volume, setVolume] = useState(80);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted] = useState(false);
   const [preampGain, setPreampGain] = useState(0);
-  const [sampleRate, setSampleRate] = useState(16000);
-  const [channels, setChannels] = useState(1);
+  const [sampleRate] = useState(16000);
+  const [channels] = useState(1);
 
   // Model settings
   const [language, setLanguage] = useState('en');
   const [model, setModel] = useState('base');
-  const [vadThreshold, setVadThreshold] = useState(0.3);
+  const [vadThreshold] = useState(0.3);
 
   // Real-time monitoring
   const [audioLevel, setAudioLevel] = useState(0);
   const [waveformData, setWaveformData] = useState<Float32Array>(new Float32Array(128));
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
   const [chunksProcessed, setChunksProcessed] = useState(0);
+
+  // NLP Insights state
+  const [insights, setInsights] = useState<Insights>({
+    keywords: [],
+    entities: [],
+    sentiment: undefined,
+  });
+  const [summary, setSummary] = useState<string>('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   // Web Audio API refs
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -231,6 +270,112 @@ export const useAudioPipeline = (): AudioPipelineState => {
                   latency,
                 },
               ]);
+            }
+          }
+          // Handle NLP insights
+          else if (message.type === 'nlp_insights' || message.type === 'insights') {
+            console.log('[useAudioPipeline] Received NLP insights:', message);
+            const data = message.data || message;
+
+            // Update keywords
+            if (data.keywords && Array.isArray(data.keywords)) {
+              setInsights((prev) => ({
+                ...prev,
+                keywords: data.keywords.map((kw: any) => ({
+                  keyword: kw.keyword || kw.text || kw,
+                  score: kw.score || kw.confidence || 1.0,
+                })),
+              }));
+            }
+
+            // Update entities
+            if (data.entities && Array.isArray(data.entities)) {
+              setInsights((prev) => ({
+                ...prev,
+                entities: data.entities.map((ent: any) => ({
+                  text: ent.text || ent.entity || ent,
+                  type: ent.type || ent.label || 'MISC',
+                  confidence: ent.confidence || ent.score,
+                })),
+              }));
+            }
+
+            // Update sentiment
+            if (data.sentiment) {
+              setInsights((prev) => ({
+                ...prev,
+                sentiment: {
+                  label: data.sentiment.label || data.sentiment.sentiment || 'Neutral',
+                  score: data.sentiment.score || data.sentiment.confidence || 0.5,
+                  positive: data.sentiment.positive,
+                  neutral: data.sentiment.neutral,
+                  negative: data.sentiment.negative,
+                },
+              }));
+            }
+          }
+          // Handle summary
+          else if (message.type === 'summary') {
+            console.log('[useAudioPipeline] Received summary:', message);
+            const summaryText = message.summary || message.data?.summary || message.text;
+            if (summaryText && summaryText.trim().length > 0) {
+              setSummary(summaryText);
+            }
+          }
+          // Handle suggestions
+          else if (message.type === 'suggestions') {
+            console.log('[useAudioPipeline] Received suggestions:', message);
+            const suggestionsList = message.suggestions || message.data?.suggestions || [];
+            if (Array.isArray(suggestionsList) && suggestionsList.length > 0) {
+              setSuggestions(suggestionsList);
+            }
+          }
+          // Handle combined results (all in one message)
+          else if (message.type === 'results' || message.type === 'analysis_complete') {
+            console.log('[useAudioPipeline] Received combined results:', message);
+            const data = message.data || message;
+
+            // Process all insights at once
+            if (data.insights) {
+              if (data.insights.keywords) {
+                setInsights((prev) => ({
+                  ...prev,
+                  keywords: data.insights.keywords.map((kw: any) => ({
+                    keyword: kw.keyword || kw.text || kw,
+                    score: kw.score || kw.confidence || 1.0,
+                  })),
+                }));
+              }
+              if (data.insights.entities) {
+                setInsights((prev) => ({
+                  ...prev,
+                  entities: data.insights.entities.map((ent: any) => ({
+                    text: ent.text || ent.entity || ent,
+                    type: ent.type || ent.label || 'MISC',
+                    confidence: ent.confidence || ent.score,
+                  })),
+                }));
+              }
+              if (data.insights.sentiment) {
+                setInsights((prev) => ({
+                  ...prev,
+                  sentiment: {
+                    label: data.insights.sentiment.label || 'Neutral',
+                    score: data.insights.sentiment.score || 0.5,
+                    positive: data.insights.sentiment.positive,
+                    neutral: data.insights.sentiment.neutral,
+                    negative: data.insights.sentiment.negative,
+                  },
+                }));
+              }
+            }
+
+            if (data.summary) {
+              setSummary(data.summary);
+            }
+
+            if (data.suggestions && Array.isArray(data.suggestions)) {
+              setSuggestions(data.suggestions);
             }
           }
         } catch (error) {
@@ -521,6 +666,11 @@ export const useAudioPipeline = (): AudioPipelineState => {
     transcriptions,
     chunksProcessed,
 
+    // NLP Insights
+    insights,
+    summary,
+    suggestions,
+
     // Handlers
     loadDevices,
     setSelectedDevice,
@@ -532,6 +682,11 @@ export const useAudioPipeline = (): AudioPipelineState => {
     handleModelChange: setModel,
     wsConnect,
     wsDisconnect,
-    clearTranscriptions: () => setTranscriptions([]),
+    clearTranscriptions: () => {
+      setTranscriptions([]);
+      setInsights({ keywords: [], entities: [], sentiment: undefined });
+      setSummary('');
+      setSuggestions([]);
+    },
   };
 };
