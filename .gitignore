@@ -248,3 +248,4 @@ coverage.xml
 .nv/
 .nvidia/
 .triton/
+ui-videos/*.webm
