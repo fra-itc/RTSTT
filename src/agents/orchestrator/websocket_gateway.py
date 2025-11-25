@@ -386,10 +386,12 @@ class WebSocketManager:
 
             # Get audio parameters from data object
             sample_rate = data_payload.get("sampleRate", 16000)
+            language = data_payload.get("language", "")  # Extract language from frontend
+            model = data_payload.get("model", "")  # Extract model from frontend
             chunk_number = data.get("chunk_number", 0)
             is_final = data.get("is_final", False)
 
-            logger.debug(f"[{client_id}] Received audio chunk: {len(audio_bytes)} bytes, {sample_rate} Hz")
+            logger.debug(f"[{client_id}] Received audio chunk: {len(audio_bytes)} bytes, {sample_rate} Hz, language={language}, model={model}")
 
             # Buffer audio chunk
             if client_id not in self.audio_buffers:
@@ -397,17 +399,31 @@ class WebSocketManager:
 
             self.audio_buffers[client_id].append(audio_bytes)
 
+            # Store language and model for this client (will use latest values)
+            if not hasattr(self, 'client_params'):
+                self.client_params = {}
+            self.client_params[client_id] = {
+                'language': language,
+                'model': model,
+                'sample_rate': sample_rate
+            }
+
             # Process when we have enough audio or if it's final
             buffer_size = sum(len(chunk) for chunk in self.audio_buffers[client_id])
-            min_buffer_size = sample_rate * 2 * 2  # 2 seconds at 16kHz, 16-bit = 64KB
+            min_buffer_size = sample_rate * 2 * 0.5  # 0.5 seconds at 16kHz, 16-bit = 16KB (reduced from 2s)
 
             if buffer_size >= min_buffer_size or is_final:
                 # Combine buffered chunks
                 combined_audio = b''.join(self.audio_buffers[client_id])
                 self.audio_buffers[client_id] = []  # Clear buffer
 
+                # Get stored parameters for this client
+                params = self.client_params.get(client_id, {})
+                client_language = params.get('language', '')
+                client_model = params.get('model', '')
+
                 # Send to STT for transcription
-                await self._transcribe_audio(client_id, combined_audio, sample_rate)
+                await self._transcribe_audio(client_id, combined_audio, sample_rate, client_language, client_model)
 
         except Exception as e:
             logger.error(f"Error processing audio chunk from {client_id}: {e}")
@@ -419,7 +435,7 @@ class WebSocketManager:
                 client_id=client_id
             )
 
-    async def _transcribe_audio(self, client_id: str, audio_data: bytes, sample_rate: int) -> None:
+    async def _transcribe_audio(self, client_id: str, audio_data: bytes, sample_rate: int, language: str = "", model: str = "") -> None:
         """
         Send audio to STT service for transcription, then process through NLP and Summary.
 
@@ -427,6 +443,8 @@ class WebSocketManager:
             client_id: Client identifier
             audio_data: Raw audio bytes
             sample_rate: Audio sample rate
+            language: Language code (e.g., 'it', 'en', 'es') or empty string for auto-detect
+            model: Model name (e.g., 'base', 'small', 'large-v3') - currently informational only
         """
         try:
             pipeline_start = datetime.utcnow()
@@ -438,6 +456,7 @@ class WebSocketManager:
 
             # Step 1: STT - Transcribe audio
             stt_start = datetime.utcnow()
+            logger.info(f"[{client_id}] Using language='{language}' (empty = auto-detect), model='{model}' (informational)")
             async with pool_manager.get_connection(ServiceType.STT) as conn:
                 channel = conn.get_channel()
                 stub = stt_service_pb2_grpc.STTServiceStub(channel)
@@ -446,7 +465,7 @@ class WebSocketManager:
                 request = stt_service_pb2.AudioRequest(
                     audio_data=audio_data,
                     sample_rate=sample_rate,
-                    language="",  # Auto-detect
+                    language=language,  # Use language from frontend (empty string = auto-detect)
                     task="transcribe",
                     request_id=client_id
                 )
