@@ -474,7 +474,15 @@ export const useAudioPipeline = (): AudioPipelineState => {
         // Send to backend
         try {
           const bytes = new Uint8Array(pcmData.buffer);
-          const base64 = btoa(String.fromCharCode(...bytes));
+
+          // Convert to base64 in chunks to avoid call stack size exceeded
+          let binary = '';
+          const chunkSize = 8192;
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+            binary += String.fromCharCode(...chunk);
+          }
+          const base64 = btoa(binary);
 
           wsSend({
             type: 'audio_chunk',
