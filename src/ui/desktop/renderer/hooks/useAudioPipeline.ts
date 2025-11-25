@@ -282,7 +282,7 @@ export const useAudioPipeline = (): AudioPipelineState => {
               setInsights((prev) => ({
                 ...prev,
                 keywords: data.keywords.map((kw: any) => ({
-                  keyword: kw.keyword || kw.text || kw,
+                  keyword: kw.keyword || kw.word || kw.text || kw,
                   score: kw.score || kw.confidence || 1.0,
                 })),
               }));
@@ -293,7 +293,7 @@ export const useAudioPipeline = (): AudioPipelineState => {
               setInsights((prev) => ({
                 ...prev,
                 entities: data.entities.map((ent: any) => ({
-                  text: ent.text || ent.entity || ent,
+                  text: ent.text || ent.word || ent.entity || ent,
                   type: ent.type || ent.label || 'MISC',
                   confidence: ent.confidence || ent.score,
                 })),
