@@ -1,0 +1,22 @@
+# External LLM APIs Requirements
+# Feature: external-llm-apis
+# Date: 2025-11-26
+
+# HTTP client for API calls
+aiohttp>=3.9.0
+aiohttp[speedups]>=3.9.0
+
+# Encryption for API key storage
+cryptography>=41.0.0
+
+# Type hints
+typing-extensions>=4.8.0
+
+# Async support
+asyncio-mqtt>=0.16.0  # If needed for MQTT integration
+
+# Already in main requirements.txt but needed here:
+# - python-dotenv>=1.0.0  (for .env support)
+# - redis[hiredis]>=5.0.0  (for caching)
+# - pytest>=7.4.0  (for testing)
+# - pytest-asyncio>=0.21.0  (for async tests)
