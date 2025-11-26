@@ -1,0 +1,60 @@
+# Parallel Development Makefile for RTSTT Project
+# Usage: make -f Makefile.parallel <target>
+
+.PHONY: help setup-worktrees setup-tmux clean-worktrees sync-all test-all
+
+help:
+	@echo "RTSTT Parallel Development Automation"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  setup-worktrees  - Create all git worktrees and venvs"
+	@echo "  setup-tmux       - Create tmux session for parallel work"
+	@echo "  sync-all         - Sync all worktrees with main branch"
+	@echo "  test-all         - Run tests in all worktrees"
+	@echo "  clean-worktrees  - Remove all worktrees (DESTRUCTIVE)"
+	@echo "  list-ports       - Show port allocation for each feature"
+	@echo ""
+
+setup-worktrees:
+	@bash scripts/setup_parallel_dev.sh --worktrees-only
+
+setup-tmux:
+	@bash scripts/setup_parallel_dev.sh --tmux-only
+
+sync-all:
+	@echo "Syncing all worktrees with main branch..."
+	@git fetch origin
+	@git checkout Main-t-orchestrazione
+	@git pull origin Main-t-orchestrazione
+	@for dir in ../RTSTT-*/; do \
+		if [ -d "$$dir" ]; then \
+			echo "Syncing $$dir..."; \
+			cd "$$dir" && git fetch origin && git merge Main-t-orchestrazione && cd -; \
+		fi \
+	done
+
+test-all:
+	@echo "Running tests in all worktrees..."
+	@for dir in ../RTSTT-*/; do \
+		if [ -d "$$dir" ]; then \
+			echo "Testing $$dir..."; \
+			cd "$$dir" && source venv/bin/activate && pytest tests/ && cd -; \
+		fi \
+	done
+
+clean-worktrees:
+	@echo "WARNING: This will remove all worktrees!"
+	@read -p "Are you sure? (y/N) " confirm && [ $$confirm = y ]
+	@git worktree remove ../RTSTT-audio-upload --force || true
+	@git worktree remove ../RTSTT-external-llm --force || true
+	@git worktree remove ../RTSTT-external-stt --force || true
+	@git worktree remove ../RTSTT-model-bench --force || true
+	@rm -rf ../RTSTT-audio-upload ../RTSTT-external-llm ../RTSTT-external-stt ../RTSTT-model-bench
+
+list-ports:
+	@echo "Port Allocation:"
+	@echo "  Main:          Backend=8000  STT=50051  NLP=50052  Summary=50053  Frontend=5173  Redis=6379"
+	@echo "  Audio Upload:  Backend=8001  STT=50054  NLP=50055  Summary=50056  Frontend=5174  Redis=6380"
+	@echo "  External LLM:  Backend=8002  STT=50057  NLP=50058  Summary=50059  Frontend=5175  Redis=6381"
+	@echo "  External STT:  Backend=8003  STT=50060  NLP=50061  Summary=50062  Frontend=5176  Redis=6382"
+	@echo "  Model Bench:   Backend=8004  STT=50063  NLP=50064  Summary=50065  Frontend=5177  Redis=6383"
