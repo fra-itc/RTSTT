@@ -17,6 +17,7 @@ from prometheus_client import Counter, Histogram, Gauge, generate_latest
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from .websocket_gateway import websocket_manager, MessageType
+from .file_upload_handler import router as file_upload_router
 from src.shared.protocols.grpc_pool import (
     ServiceType,
     ServiceConfig,
@@ -162,6 +163,9 @@ instrumentator = Instrumentator(
 
 # Instrument the FastAPI app
 instrumentator.instrument(app).expose(app, endpoint="/metrics")
+
+# Include file upload router
+app.include_router(file_upload_router)
 
 # Custom Prometheus metrics
 transcription_requests = Counter(
