@@ -482,6 +482,19 @@ class TrayIcon:
                     self._make_preview_sound(str(mp3)),
                 ))
 
+        # --- Mode submenu ---
+        current_mode = config.get("mode", "normal")
+        mode_labels = {"normal": "Normal", "semi_silent": "Semi-Silent"}
+        mode_items = []
+        for mode_key, mode_label in mode_labels.items():
+            checked = (mode_key == current_mode)
+            mode_items.append(pystray.MenuItem(
+                f"{'> ' if checked else '  '}{mode_label}",
+                self._make_set_mode(mode_key),
+            ))
+
+        mode_display = mode_labels.get(current_mode, "Normal")
+
         return pystray.Menu(
             pystray.MenuItem("Voice Bridge v0.4", None, enabled=False),
             pystray.Menu.SEPARATOR,
@@ -492,6 +505,7 @@ class TrayIcon:
             )),
             pystray.MenuItem("Whisper Language", pystray.Menu(*lang_items)),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem(f"Mode [{mode_display}]", pystray.Menu(*mode_items)),
             pystray.MenuItem(f"Volume [{current_vol}%]", pystray.Menu(*vol_items)),
             pystray.MenuItem("Sound Pack", pystray.Menu(*pack_items)),
             pystray.MenuItem(f"Preview [{current_pack}]", pystray.Menu(*preview_items) if preview_items else None),
@@ -549,6 +563,15 @@ class TrayIcon:
             config["sound_pack"] = pack_name
             _save_config(config)
             logger.info(f"Sound pack set to: {pack_name}")
+            self._rebuild_menu()
+        return handler
+
+    def _make_set_mode(self, mode_name):
+        def handler(icon, item):
+            config = _load_config()
+            config["mode"] = mode_name
+            _save_config(config)
+            logger.info(f"Notification mode set to: {mode_name}")
             self._rebuild_menu()
         return handler
 
